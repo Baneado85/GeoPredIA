@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Formulario de Revisión Técnica de Riesgo - GeoPredIA",
+  "type": "object",
+  "properties": {
+    "evaluationId": {
+      "type": "string",
+      "title": "ID de Evaluación"
+    },
+    "zoneId": {
+      "type": "string",
+      "title": "ID de Zona Minera"
+    },
+    "globalRiskScore": {
+      "type": "number",
+      "title": "Puntaje de Riesgo Global"
+    },
+    "aiSynthesis": {
+      "type": "string",
+      "title": "Síntesis del Sistema Multi-Agente de IA"
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["APROBADO", "OBSERVADO_REQUIERE_INFO", "RECHAZADO"],
+      "title": "Decisión del Especialista"
+    },
+    "justification": {
+      "type": "string",
+      "title": "Justificación Técnica de la Decisión"
+    }
+  },
+  "required": ["evaluationId", "zoneId", "decision", "justification"]
+}

@@ -1,0 +1,42 @@
+====================================================================
+ FÓRMULAS DE MEDIDAS CALCULADAS - SAP ANALYTICS CLOUD (SAC)
+====================================================================
+
+1. RIESGO GEOLÓGICO (Escala 0 - 100)
+------------------------------------
+[Geo_Score] = (
+  0.50 * [Norm_Sismicidad] +
+  0.30 * [Norm_Pendiente_Terreno] +
+  0.20 * [Norm_Incertidumbre_Recurso]
+)
+
+2. RIESGO AMBIENTAL (Escala 0 - 100)
+------------------------------------
+[Env_Score] = (
+  0.40 * [Norm_Turbidez_Agua] +
+  0.35 * [Norm_Polvo_PM25] +
+  0.25 * [Norm_Impacto_Biodiversidad]
+)
+
+3. RIESGO SOCIAL (Escala 0 - 100)
+---------------------------------
+[Soc_Score] = (
+  0.60 * [Norm_Conflictos_Historicos] +
+  0.40 * (100 - [Norm_Licencia_Social_Firmada])
+)
+
+4. RIESGO GLOBAL PONDERADO (ESCENARIO BASE)
+-------------------------------------------
+[Global_Risk_Base] = (
+  0.40 * [Geo_Score] +
+  0.35 * [Env_Score] +
+  0.25 * [Soc_Score]
+)
+
+5. RIESGO GLOBAL PONDERADO (ESCENARIO ALTA PRIORIDAD AMBIENTAL)
+---------------------------------------------------------------
+[Global_Risk_EnvPriority] = (
+  0.25 * [Geo_Score] +
+  0.50 * [Env_Score] +
+  0.25 * [Soc_Score]
+)
