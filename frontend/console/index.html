@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#133e37">
+  <meta name="description" content="GeoPredIA: evaluación explicable de riesgos geológicos y socioambientales para exploración.">
+  <title>GeoPredIA · Centro de decisiones</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Saltar al contenido</a>
+  <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+    <symbol id="i-nodes" viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="18" r="3"/><circle cx="19" cy="18" r="3"/><path d="m10 8-4 7m8-7 4 7M8 18h8"/></symbol>
+    <symbol id="i-wave" viewBox="0 0 24 24"><path d="M2 12h4l3-8 6 16 3-8h4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m7 12 3 3 7-7"/><rect x="3" y="3" width="18" height="18" rx="4"/></symbol>
+    <symbol id="i-data" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 14 6M18 18A8 8 0 0 1 4 12"/></symbol>
+  </svg>
+
+  <aside class="sidebar" aria-label="Navegación principal">
+    <a class="brand" href="#overview" aria-label="GeoPredIA, inicio"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 36 36"><path d="M4 27 15 7l7 13 4-7 7 14H4Z"/><path d="m11 15 4 4 4-4"/></svg></span><span>GeoPred<span class="brand-accent">IA</span><small>EXPLORAR CON EVIDENCIA</small></span></a>
+    <span class="nav-label">CENTRO DE DECISIONES</span>
+    <nav class="navigation">
+      <a class="nav-item active" href="#overview" data-view="overview" aria-current="page"><svg><use href="#i-grid"/></svg>Panorama<span class="nav-index">01</span></a>
+      <a class="nav-item" href="#agents" data-view="agents"><svg><use href="#i-nodes"/></svg>Multiagentes<span class="nav-index">02</span></a>
+      <a class="nav-item" href="#sentinel" data-view="sentinel"><svg><use href="#i-wave"/></svg>IoT Sentinel<span class="nav-index">03</span></a>
+      <a class="nav-item" href="#reviews" data-view="reviews"><svg><use href="#i-check"/></svg>Revisión humana<span class="nav-index">04</span></a>
+      <a class="nav-item" href="#data" data-view="data"><svg><use href="#i-data"/></svg>Datos e integración<span class="nav-index">05</span></a>
+    </nav>
+    <div class="sidebar-bottom"><div class="sidebar-note"><span class="small-orbit" aria-hidden="true"></span><strong>La evidencia orienta.<br>Las personas deciden.</strong><p>Riesgo geológico, ambiental y social en un mismo lugar.</p></div><span class="sidebar-footer">GEORISK / HACKATHON 2026</span></div>
+  </aside>
+
+  <div class="workspace">
+    <header class="topbar"><div class="breadcrumb">Espacio de trabajo <span>/</span> <strong id="breadcrumb-view">Panorama</strong></div><div class="topbar-tools"><span id="connection-label" class="connection"><span class="dot"></span>Comprobando servicio</span><button id="refresh-button" class="icon-button" type="button" aria-label="Actualizar datos"><svg><use href="#i-refresh"/></svg></button><span class="workspace-avatar" aria-label="Espacio de trabajo GeoPredIA">GP</span></div></header>
+    <main id="main-content" tabindex="-1">
+      <div id="notice" class="notice" role="status" hidden></div>
+      <div id="error-box" class="error-box" role="alert" hidden></div>
+      <div id="loading" class="loading" role="status">Cargando las zonas de exploración…</div>
+
+      <section class="view" id="view-overview" aria-labelledby="overview-title">
+        <div class="hero"><div><div class="eyebrow"><span></span> INTELIGENCIA PARA LA EXPLORACIÓN</div><h1 id="overview-title">Cada zona, una<br><em>decisión informada.</em></h1><p>Comprende el riesgo. Revisa la evidencia.<br class="desktop-break"> Prioriza el siguiente paso con tu equipo.</p></div><div class="terrain-art" aria-hidden="true"><svg viewBox="0 0 330 210"><g fill="none" stroke="currentColor" stroke-width="1.1"><path d="M-15 182C37 95 64 209 110 127S183 21 240 92s60 38 110 18"/><path d="M-15 168C37 81 64 195 110 113S183 7 240 78s60 38 110 18"/><path d="M-15 154C37 67 64 181 110 99S183-7 240 64s60 38 110 18"/><path d="M-15 140C37 53 64 167 110 85S183-21 240 50s60 38 110 18"/><path d="M-15 196C37 109 64 223 110 141S183 35 240 106s60 38 110 18"/><path d="M-15 210C37 123 64 237 110 155S183 49 240 120s60 38 110 18"/><path d="M-15 224C37 137 64 251 110 169S183 63 240 134s60 38 110 18"/><path d="M-15 238C37 151 64 265 110 183S183 77 240 148s60 38 110 18"/><path d="M-15 126C37 39 64 153 110 71S183-35 240 36s60 38 110 18"/></g><circle cx="174" cy="85" r="26" fill="#f7f5ee" opacity=".9"/><circle cx="174" cy="85" r="15" fill="none" stroke="#ca693f" stroke-width="1"/><circle cx="174" cy="85" r="5" fill="#ca693f"/><path d="M174 48v12m0 50v12m-37-37h12m50 0h12" stroke="#ca693f"/></svg><span>EVIDENCIA → ANÁLISIS → DECISIÓN</span></div></div>
+        <div class="kpi-grid" id="kpis"></div>
+        <div class="overview-grid">
+          <section class="card zones-card" aria-labelledby="zones-title"><div class="card-heading"><div><div class="eyebrow">PORTAFOLIO DE EXPLORACIÓN</div><h2 id="zones-title">Zonas bajo evaluación</h2></div><span class="muted-pill" id="zone-count">— zonas</span></div><div class="table-tools"><label class="search-label"><span aria-hidden="true">⌕</span><input id="zone-search" type="search" placeholder="Buscar zona o región" aria-label="Buscar zona o región"></label><label class="sr-only" for="risk-filter">Filtrar por riesgo</label><select id="risk-filter"><option value="all">Todos los riesgos</option><option>Bajo</option><option>Medio</option><option>Alto</option><option>Sin datos</option></select></div><div class="table-scroll"><table class="zones-table"><thead><tr><th scope="col">Zona / región</th><th scope="col">Geol.</th><th scope="col">Amb.</th><th scope="col">Social</th><th scope="col">Riesgo global</th></tr></thead><tbody id="zones-table-body"></tbody></table></div><div class="table-footnote"><span class="tiny-dot"></span>Escala 0–100: a mayor valor, mayor riesgo. “—” indica datos faltantes.</div></section>
+          <aside class="card detail-card" aria-labelledby="detail-title"><div class="eyebrow">DETALLE DE ZONA</div><div id="zone-detail"></div></aside>
+        </div>
+        <div class="principle-strip"><span class="principle-number">01</span><div><strong>El dato que falta también importa.</strong><p>Un valor ausente exige revisión; no se interpreta como riesgo cero.</p></div><a class="text-link" href="#data">Ver metodología <svg><use href="#i-arrow"/></svg></a></div>
+      </section>
+
+      <section class="view" id="view-agents" aria-labelledby="agents-title" hidden>
+        <div class="section-hero"><div class="eyebrow">ANÁLISIS CON TRAZABILIDAD</div><h1 id="agents-title">Tres perspectivas.<br><em>Una revisión fundamentada.</em></h1><p>Los especialistas examinan la evidencia y un coordinador reúne los motivos para revisión.</p></div>
+        <div class="context-bar"><label for="agent-zone-select">Zona seleccionada</label><select id="agent-zone-select" class="zone-select"></select><span id="agent-mode" class="muted-pill">Agentes por reglas</span><button id="run-agents-button" class="button button-primary" type="button">Ejecutar análisis <svg><use href="#i-arrow"/></svg></button></div>
+        <div class="info-note">Los agentes explican los resultados y señalan vacíos. El cálculo oficial corresponde a SAP Analytics Cloud y la decisión final a una persona.</div>
+        <div id="agents-results" aria-live="polite"></div>
+      </section>
+
+      <section class="view" id="view-sentinel" aria-labelledby="sentinel-title" hidden>
+        <div class="section-hero"><div class="eyebrow">DEL TERRENO A LA EVIDENCIA</div><h1 id="sentinel-title">Sentinel.<br><em>Empieza con S/100.</em></h1><p>Un prototipo de bajo costo para observar cambios de temperatura y humedad.</p></div>
+        <div class="context-bar"><label for="telemetry-zone-select">Zona seleccionada</label><select id="telemetry-zone-select" class="zone-select"></select><button id="simulate-button" class="button button-outline" type="button">Generar lectura simulada</button></div>
+        <div class="sensor-grid" id="sensor-readings"></div>
+        <div class="two-column"><section class="card padded"><div class="card-heading"><div><div class="eyebrow">REGISTRO DE MEDICIONES</div><h2>Últimas observaciones</h2></div></div><div id="telemetry-list"></div></section><section class="card padded"><div class="eyebrow">KIT DE PROTOBOARD</div><h2>Pequeño presupuesto.<br>Una medición real.</h2><div class="kit-total">S/88.30 <span>materiales estimados</span></div><ul class="clean-list"><li><strong>ESP32 con Wi-Fi</strong><span>S/32.00</span></li><li><strong>DHT11 · aire</strong><span>S/8.00</span></li><li><strong>Sensor capacitivo · suelo</strong><span>S/4.10</span></li><li><strong>DS18B20 + adaptador · agua</strong><span>S/13.50</span></li><li><strong>Protoboards, cables y resistencias</strong><span>S/30.70</span></li></ul><p class="small muted">Referencia del presupuesto de prototipo: 15 sep. 2026. Reserva S/11.70 para envío o imprevistos; se reutiliza una laptop. Confirma los precios antes de comprar.</p><div class="info-note compact">Humedad del suelo = índice relativo calibrado. Este kit no determina contaminación, metales ni potabilidad.</div></section></div>
+      </section>
+
+      <section class="view" id="view-reviews" aria-labelledby="reviews-title" hidden>
+        <div class="section-hero"><div class="eyebrow">CRITERIO HUMANO, SIEMPRE</div><h1 id="reviews-title">La decisión<br><em>queda documentada.</em></h1><p>Registra quién revisó la evaluación, qué decidió y en qué se basó.</p></div>
+        <div class="two-column"><section class="card padded"><div class="card-heading"><div><div class="eyebrow">BANDEJA DEL EQUIPO</div><h2>Evaluaciones pendientes</h2></div><span id="pending-count" class="muted-pill">—</span></div><div id="review-queue"></div></section><section class="card padded"><div class="eyebrow">REGISTRAR REVISIÓN</div><h2>Tu criterio, con fundamento</h2><form id="review-form"><label for="review-zone-select">Zona y evaluación vigente</label><select id="review-zone-select" class="zone-select" required></select><p id="review-evaluation-id" class="small muted"></p><label for="reviewer">Nombre de la persona revisora</label><input id="reviewer" name="reviewer" autocomplete="name" minlength="2" maxlength="100" required placeholder="Nombre y apellido"><label for="decision">Decisión</label><select id="decision" name="decision" required><option value="">Selecciona una decisión</option><option value="approved">Aprobar evaluación</option><option value="observed">Solicitar revisión adicional</option><option value="rejected">Rechazar evaluación</option></select><label for="justification">Justificación</label><textarea id="justification" name="justification" rows="4" minlength="12" maxlength="3000" required placeholder="Explica la evidencia revisada y los motivos de tu decisión."></textarea><p class="small muted">Aprobar esta evaluación no autoriza actividades de exploración.</p><button id="review-submit" class="button button-primary" type="submit">Guardar revisión <svg><use href="#i-check"/></svg></button></form></section></div>
+        <section class="card padded history-card"><div class="eyebrow">TRAZABILIDAD</div><h2>Historial de decisiones</h2><div id="review-history"></div></section>
+      </section>
+
+      <section class="view" id="view-data" aria-labelledby="data-title" hidden>
+        <div class="section-hero"><div class="eyebrow">DATOS QUE SE PUEDEN EXPLICAR</div><h1 id="data-title">Cada resultado<br><em>conserva su origen.</em></h1><p>Importa evaluaciones calculadas en SAC y consulta el estado de las integraciones.</p></div>
+        <div id="integration-grid" class="integration-grid"></div>
+        <div class="two-column"><section class="card padded"><div class="eyebrow">SAP ANALYTICS CLOUD</div><h2>Importar una evaluación</h2><p>Exporta la tabla de SAC con sus valores calculados. La importación conserva los resultados como una evaluación versionada.</p><form id="import-form"><a class="template-download" href="./sac_demo_snapshot.csv" download>Descargar CSV de prueba · datos sintéticos</a><label for="csv-file">Archivo CSV</label><input id="csv-file" type="file" accept=".csv,text/csv" required><p class="small muted">Usa el contrato <code>analytics/sac_snapshot_contract.md</code> del repositorio. El archivo <code>sac_demo_snapshot.csv</code> contiene datos inventados para probar la importación; no proviene de SAC.</p><button id="import-submit" class="button button-primary" type="submit">Validar e importar <svg><use href="#i-arrow"/></svg></button></form><p id="import-result" class="result-message" role="status"></p></section><section class="card padded"><div class="eyebrow">MODELO DE DEMOSTRACIÓN</div><h2>Pesos explícitos.<br>Resultados revisables.</h2><p>La demostración local utiliza estos pesos ilustrativos. Deben validarse con el dataset y la metodología del equipo antes de su uso oficial.</p><div class="weight-row"><span>Geológico</span><strong>40%</strong></div><div class="weight-row"><span>Ambiental</span><strong>35%</strong></div><div class="weight-row"><span>Social</span><strong>25%</strong></div><p class="small muted">Una evaluación importada de SAC conserva sus propios índices, total y versión. Los agentes no cambian esos valores.</p><div class="info-note compact">Este sistema ayuda a revisar riesgos; no estima rentabilidad ni demuestra la causa de un cambio ambiental.</div></section></div>
+        <section class="card padded history-card"><div class="card-heading"><div><div class="eyebrow">BITÁCORA</div><h2>Eventos registrados</h2></div><button id="audit-button" class="button button-outline" type="button">Consultar bitácora</button></div><div id="audit-list" class="empty-state">Consulta la bitácora para ver los eventos guardados por el servicio.</div></section>
+      </section>
+      <footer class="page-footer"><span>GeoPredIA <span class="footer-divider">/</span> Evaluación inteligente de riesgos</span><span>Datos → evidencia → revisión humana</span></footer>
+    </main>
+  </div>
+</body>
+</html>

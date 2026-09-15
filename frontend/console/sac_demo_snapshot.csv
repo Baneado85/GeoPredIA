@@ -1,0 +1,4 @@
+zone_id,evaluated_at,model_version,dataset_version,geological,environmental,social,global_risk
+Z-001,2026-09-15T15:00:00Z,demo-illustrative-v1,synthetic-demo-v1,32,44,30,35.7
+Z-002,2026-09-15T15:00:00Z,demo-illustrative-v1,synthetic-demo-v1,64,78,55,66.65
+Z-003,2026-09-15T15:00:00Z,demo-illustrative-v1,synthetic-demo-v1,35,,40,
