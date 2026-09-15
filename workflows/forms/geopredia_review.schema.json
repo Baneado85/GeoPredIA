@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:geopredia:review-callback:v1",
+  "title": "GeoPredIA: decisión humana de BPA",
+  "description": "Contrato HTTP; no es un formulario SAP Build importable. Los valores de identidad deben salir del usuario de tarea autenticado.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["evaluation_id", "reviewer", "decision", "justification", "workflow_instance_id"],
+  "properties": {
+    "evaluation_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "reviewer": {"type": "string", "minLength": 2, "maxLength": 100},
+    "decision": {"type": "string", "enum": ["approved", "observed", "rejected"]},
+    "justification": {"type": "string", "minLength": 12, "maxLength": 3000},
+    "workflow_instance_id": {"type": "string", "minLength": 1, "maxLength": 128}
+  }
+}
