@@ -1,0 +1,2 @@
+# Optional official SAP HANA Python client. Validate the release with the event runtime.
+hdbcli>=2.24,<3

@@ -1,0 +1,9 @@
+.git
+.env
+.venv
+**/__pycache__
+.local
+**/node_modules
+**/secrets.h
+work
+outputs

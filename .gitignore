@@ -1,29 +1,26 @@
-# Node.js
+.env
+.env.*
+!.env.example
+.venv/
+venv/
 node_modules/
-npm-debug.log
-package-lock.json
-
-# Python
 __pycache__/
 *.py[cod]
-*$py.class
-.venv/
-env/
-venv/
-
-# Environment Variables
-.env
-.env.local
-
-# IDEs & Editors
-.vscode/
-.idea/
-*.swp
-
-# SAP CAP / SAP BTP Build
-dist/
-gen/
-
-# PlatformIO / ESP32
+.local/
+*.db
+*.db-*
+*.sqlite*
+secrets.h
+default-env.json
+service-key.json
+credentials.json
+*.pem
+*.key
+*.p12
+*.pfx
 .pio/
-.clangd/
+*.log
+.DS_Store
+Thumbs.db
+coverage/
+.pytest_cache/

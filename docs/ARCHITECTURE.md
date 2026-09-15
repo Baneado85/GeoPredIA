@@ -1,70 +1,52 @@
-# 🏛️ Arquitectura del Sistema GeoPredIA
+# Arquitectura y decisiones de implementación
 
-## Visión General
-GeoPredIA (GeoRisk Decision Hub) integra servicios analíticos, gobernanza de procesos, inteligencia artificial multi-agente e ingesta de IoT en tiempo real sobre la infraestructura de SAP Business Technology Platform (SAP BTP).
+## Problema
 
-```mermaid
-flowchart TD
-    subgraph Client ["Capa de Presentación"]
-        Fiori["SAP Build Work Zone (Portal Standard)"]
-        UI5["SAPUI5 Custom App (Fiori Launchpad)"]
-    end
+Comparar zonas de exploración exige reunir riesgos geológicos, ambientales y sociales que suelen estar dispersos. GeoPredIA organiza una evaluación reproducible, evidencia y revisión humana. No predice deslizamientos ni declara viabilidad minera automáticamente.
 
-    subgraph Analytical ["Capa Analítica & Scoring"]
-        SAC["SAP Analytics Cloud (SAC)"]
-        Scoring["Motor de Ponderación (Geo/Env/Soc)"]
-        Sensitivity["Simulación de Sensibilidad"]
-    end
+## Componentes y responsabilidades
 
-    subgraph Core_Services ["Capa Backend & Servicios CAP"]
-        CAP["SAP CAP Integration Service (Node.js)"]
-        OData["OData V4 Endpoints"]
-        IoT_Ingest["Endpoint Ingesta HTTPS IoT"]
-    end
+| Componente | Responsabilidad | Estado de esta versión |
+|---|---|---|
+| SAP HANA Cloud | Fuente del dataset común y tablas propias del equipo | Adaptadores de lectura y réplica explícita de eventos + DDL; requiere tenant |
+| SAP Analytics Cloud | Scoring oficial, tres KPIs, rankings y escenarios | Especificación y contrato CSV; construir story en SAC |
+| API FastAPI | Validación, snapshots, agentes, telemetría y adaptadores | Funcional localmente |
+| SQLite | Persistencia para ensayo del prototipo local | Funcional; no sustituye HANA para la entrega |
+| Multiagentes | Interpretar evidencia disponible y señalar vacíos | Reglas funcionales; selección LLM opcional |
+| SAP BPA | Revisión, decisión y justificación por especialista | Adaptador OAuth + callback; requiere proceso desplegado |
+| SAP Work Zone | Acceso a aplicaciones, story SAC y tareas | Guía de configuración; requiere tenant |
+| Frontend | Operar y presentar la demo | HTML/CSS/JS; modo estático explícito sin backend |
+| Sentinel | Capturar parámetros ambientales del kit S/100 | Firmware y simulador; falta prueba física |
 
-    subgraph Governance ["Capa de Gobernanza"]
-        BPA["SAP Build Process Automation"]
-        Workflow["Flujo de Revisión por Especialista"]
-    end
+## Contratos
 
-    subgraph AI_Services ["Capa Multi-Agente IA"]
-        Agent_Server["GeoPredIA AI Orchestrator (Python)"]
-        Geo_Agent["Agente Geológico"]
-        Env_Agent["Agente Ambiental"]
-        Soc_Agent["Agente Social"]
-        Coord_Agent["Agente Coordinador / Síntesis"]
-    end
+- `Evaluation`: ID nuevo por versión, zona, fecha con timezone, versiones de modelo/dataset, origen, tres subíndices, global, evidencia y campos ausentes.
+- `AgentRun`: referencia a evaluación, tres hallazgos, coordinador, modo ejecutado, fecha y copia de entradas/telemetría. No cambia el snapshot.
+- `Telemetry`: identificador de dispositivo/zona, fecha observada, origen dispositivo/simulador y lecturas con unidades fijas. Reintentar la misma fecha/dispositivo conserva ID; un contenido distinto produce conflicto.
+- `Review`: evaluación, nombre del especialista, decisión, justificación, origen y fecha. Una decisión por versión. La identidad escrita en demo no se verifica.
+- `Audit`: registro acumulado de operaciones. Es una traza de aplicación local, no un registro inviolable frente a un administrador de SQLite.
 
-    subgraph Database ["Capa de Datos"]
-        HANA[("SAP HANA Cloud (In-Memory DB)")]
-    end
+Las validaciones rechazadas no crean registros parciales. Los CSV se validan completos antes de guardarse. Todas las consultas con datos de usuario usan parámetros.
 
-    subgraph Edge ["Capa IoT Sentinel"]
-        ESP32["ESP32 Microcontroller Unit"]
-        Sensors["Sensores (Humedad, Turbidez, Polvo PM2.5)"]
-    end
+## Adaptación multiagente
 
-    %% Flujos
-    Client --> Analytical
-    Client --> CAP
-    Analytical --> Scoring --> Sensitivity
-    HANA --> Analytical
-    Sensitivity -->|"Exportación POV / Carga"| CAP
-    CAP --> HANA
-    CAP --> BPA
-    CAP --> Agent_Server
-    Agent_Server --> Geo_Agent & Env_Agent & Soc_Agent --> Coord_Agent
-    Coord_Agent --> CAP
-    Sensors --> ESP32 -->|"HTTPS POST /telemetry"| CAP
-    BPA -->|"Decisión & Feedback"| CAP
-```
+Se toma la separación conceptual del proyecto financiero entre propuesta, reglas y ejecución. Se cambia el dominio: las dimensiones son geología, ambiente y sociedad; la salida es un expediente para revisión. No hay órdenes financieras ni credenciales Alpaca. Implementación original, sin copiar su código.
 
-## Flujo End-to-End de una Evaluación
-1. **Ingesta e Integración**: SAP HANA Cloud almacena el dataset unificado del reto GeoRisk.
-2. **Cálculo de Scoring**: SAC consulta HANA Cloud y aplica la fórmula dimensional de riesgo (40% Geológico, 35% Ambiental, 25% Social).
-3. **Simulación de Escenarios**: El especialista interactúa en SAC probando supuestos alternativos (Escenario Base, Alta Prioridad Ambiental, Adverso).
-4. **Registro y Carga POV**: Se exporta el estado visible de la tabla analítica (Point of View) y se registra en la aplicación de integración SAP CAP.
-5. **Evaluación Multi-Agente**: La API de CAP envía la evaluación al sistema Multi-Agente de IA, el cual genera explicaciones cualitativas detalladas por dimensión.
-6. **Revisión en SAP BPA**: El resultado y la explicación de los agentes inician una solicitud de revisión técnica en SAP Build Process Automation.
-7. **Monitoreo IoT Continuo**: Los sensores GeoRisk Sentinel envían lecturas periódicas. Si un sensor detecta turbidez anormal o saturación de humedad en suelo, emite una alerta automática hacia CAP que escala una nueva revisión en BPA.
-8. **Decisión e Histórico**: El especialista aprueba, observa o rechaza la evaluación, quedando registrada con firma de usuario y versión del modelo en HANA Cloud.
+Los tres especialistas reciben el mismo snapshot y pueden correr en paralelo. El coordinador recopila sus hallazgos. Un LLM opcional solo selecciona enfoques y evidencia entre opciones permitidas. La lógica de integridad sigue siendo determinística y la aprobación siempre humana.
+
+## Autenticación y operación
+
+El arranque recomendado escucha en `127.0.0.1`, deshabilita confianza en headers de proxy y acepta hosts explícitos. Los clientes API remotos necesitan `APP_API_KEY` en `X-API-Key`; el frontend de esta entrega está pensado para uso local. Sensores requieren `DEVICE_API_KEY`; callbacks BPA requieren `BPA_CALLBACK_KEY` y una instancia vinculada a la evaluación.
+
+El callback autentica al servicio que envía la decisión. El nombre del revisor solo será una identidad verificada cuando el proceso BPA lo derive de la tarea autenticada y se valide ese vínculo. Una clave compartida por sí sola no prueba la identidad humana.
+
+HANA y BPA no se contactan en el arranque ni se simulan como conectados. Los adaptadores se activan mediante acciones explícitas y variables del servidor. `.env`, certificados privados, claves, bases locales y firmware `secrets.h` están excluidos de Git.
+
+## Pendiente para el tenant del evento
+
+1. Confirmar columnas y diccionario del dataset común; mapear IDs sin mezclarlos con fixtures.
+2. Justificar y construir el scoring dentro de SAC.
+3. Publicar formularios/tareas BPA y probar el callback con la identidad del especialista.
+4. Vincular UI, SAC y tareas en Work Zone mediante mecanismos permitidos por el tenant.
+5. Crear `GPI_EVENT_STORE` en el esquema propio, ejecutar `/api/integrations/hana/publish` y verificar la réplica. Probar roles, acceso, conectividad y recuperación. SQLite sigue siendo el almacén operativo del prototipo; la réplica es explícita, no sincronización continua.
+6. Compilar firmware y validar sensor por sensor con el hardware real.

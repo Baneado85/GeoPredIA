@@ -1,189 +1,142 @@
-# 🌍 GeoPredIA — GeoRisk Decision Hub
+# GeoPredIA · GeoRisk Decision Hub
 
-> **Plataforma Integral de Evaluación de Riesgos Geológicos, Socioambientales y Simulación de Escenarios para Zonas de Exploración Minera**
-> 
-> *Proyecto desarrollado para la Hackathon **ULatinHack - Reto Oficial GeoRisk**.*
+**Evaluación explicable de riesgos geológicos, ambientales y sociales para zonas de exploración minera.**
 
----
+Proyecto para el reto **GeoRisk — HKT-2026-T2, ULatinHack 2026**. Ayuda a comparar zonas, explicar qué evidencia respalda cada evaluación y registrar una decisión humana con su justificación.
 
-## 📋 Tablas de Contenidos
-- [1. Propuesta del Proyecto](#1-propuesta-del-proyecto)
-- [2. ¿Qué es SAP y por qué es clave en GeoPredIA?](#2-qué-es-sap-y-por-qué-es-clave-en-geopredia)
-- [3. Arquitectura del Sistema](#3-arquitectura-del-sistema)
-- [4. Estructura del Repositorio](#4-estructura-del-repositorio)
-- [5. Modelo de Evaluación y Scoring](#5-modelo-de-evaluación-y-scoring)
-- [6. Sistema Multi-Agente con IA (GeoPredIA AI)](#6-sistema-multi-agente-con-ia-geopredia-ai)
-- [7. Extensión IoT: GeoRisk Sentinel](#7-extensión-iot-georisk-sentinel)
-- [8. Reparto de Trabajo y Equipo (5 Personas)](#8-reparto-de-trabajo-y-equipo-5-personas)
-- [9. Guía de Inicio Rápido](#9-guía-de-inicio-rápido)
+## Qué puedes ejecutar hoy
 
----
+- Frontend en español con panorama de zonas, comparación de tres dimensiones y escenarios ilustrativos.
+- Tres agentes especialistas (geológico, ambiental y social) y un coordinador. Funcionan por reglas sin claves; Groq es opcional.
+- Importación de snapshots CSV ya calculados en SAP Analytics Cloud, conservando sus valores.
+- Revisión humana por versión, historial de ejecuciones, decisiones y eventos de auditoría.
+- Recepción autenticada de telemetría, simulador y firmware del kit ESP32 de aproximadamente **S/88.30**.
+- Adaptadores para leer una vista de SAP HANA, publicar registros en un esquema del equipo y enviar evaluaciones a SAP Build Process Automation.
 
-## 1. Propuesta del Proyecto
+**Estado real:** la aplicación local es funcional. Las seis zonas iniciales son ficticias y no son el dataset común del concurso. SAP HANA, SAC, BPA y Work Zone requieren configuración y verificación en el tenant del evento. Tener un adaptador no equivale a haber desplegado esos servicios. El firmware necesita compilación y prueba en la placa física.
 
-**GeoPredIA (GeoRisk Decision Hub)** ayuda a especialistas, geólogos y comités técnicos a comparar zonas de exploración minera, comprender cuantitativa y cualitativamente qué factores generan riesgo y registrar decisiones sustentadas e inmutables.
+## Inicio rápido — Windows
 
-Cada evaluación en GeoPredIA responde a:
-1. **¿Qué riesgos geológicos, ambientales y sociales presenta la zona?**
-2. **¿Qué datos y evidencia científica respaldan el resultado?**
-3. **¿Cómo cambia la evaluación bajo escenarios y supuestos alternativos?**
-4. **¿Qué información faltante o alertas ambientales deben ser atendidas?**
-5. **¿Quién revisó la evaluación y cuál fue la justificación técnica de la decisión?**
+Necesitas Python 3.12 y acceso a una terminal en esta carpeta.
 
----
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
+.\.venv\Scripts\python.exe -m uvicorn agents.api:app --host 127.0.0.1 --port 8000 --no-proxy-headers
+```
 
-## 2. ¿Qué es SAP y por qué es clave en GeoPredIA?
+Abre **http://127.0.0.1:8000**. API documentada en **http://127.0.0.1:8000/docs**. No necesitas Node, Docker, un LLM ni una cuenta SAP para ejecutar el modo local. La información se guarda en `.local/geopredia.db`; reiniciar conserva los datos.
 
-### ¿Qué es SAP?
-**SAP** (*Systemanalyse Programmentwicklung*) es la plataforma de software empresarial y analítica en la nube líder a nivel mundial. Proporciona herramientas de procesamiento de datos en tiempo real, inteligencia de negocios y gobernanza corporativa.
+Linux/macOS: usa `python3 -m venv .venv` y `.venv/bin/python` en los comandos anteriores. Puedes copiar la configuración con `cp .env.example .env`.
 
-### SAP en GeoPredIA:
-En este proyecto, la suite **SAP Business Technology Platform (SAP BTP)** y **SAP Analytics Cloud (SAC)** garantizan el cumplimiento de las exigencias del reto GeoRisk:
+### GitHub Pages
 
-- 🗄️ **SAP HANA Cloud**: Base de datos *in-memory* que consolida el dataset común del concurso y registra la telemetría IoT y revisiones.
-- 📊 **SAP Analytics Cloud (SAC)**: Motor de scoring que calcula los índices ponderados de riesgo (Geológico, Ambiental, Social) y permite simulaciones de sensibilidad en tiempo real.
-- ⚙️ **SAP Build Process Automation (BPA)**: Workflow de gobernanza que gestiona las solicitudes de revisión técnica, aprobación y rechazo justificado.
-- 🚪 **SAP Build Work Zone (Standard Edition)**: Portal unificado basado en SAP Fiori para otorgar acceso seguro según el rol del usuario (Analista, Revisora, Administrador).
-- 🔌 **SAP CAP (Cloud Application Programming Model)**: Servicio de integración Node.js que conecta SAC, HANA, BPA, la IA Multi-Agente y las unidades IoT.
+`index.html` abre `frontend/console/index.html`. En Pages se muestra una **vista estática de demostración**, con datos de ejemplo y operaciones deshabilitadas. Para ejecutar agentes, guardar decisiones o recibir sensores, inicia el backend local. GitHub Pages no ejecuta Python ni aloja SAP.
 
----
-
-## 3. Arquitectura del Sistema
+## Arquitectura
 
 ```mermaid
-flowchart TD
-    subgraph Portal ["SAP Build Work Zone (Portal Unificado)"]
-        W["Dashboard Fiori / SAPUI5"]
-    end
-
-    subgraph Analitica ["SAP Analytics Cloud (SAC)"]
-        S["Scoring de Riesgo\n(Geológico 40% | Ambiental 35% | Social 25%)"]
-        SIM["Simulador de Escenarios\n(Base / Alta Prioridad Ambiental / Adverso)"]
-    end
-
-    subgraph Procesos ["SAP Build Process Automation"]
-        B["Workflow de Revisión Técnica\n(Aprobación / Observaciones / Rechazo)"]
-    end
-
-    subgraph Backend_Cap ["Servicio de Integración (SAP CAP - Node.js)"]
-        A["API Gateway OData / REST"]
-    end
-
-    subgraph Multi_Agente ["Sistema Multi-Agente (GeoPredIA AI)"]
-        MA["Orquestador Multi-Agente\n(Geo, Ambient, Social & Coordinador)"]
-    end
-
-    subgraph Persistencia ["SAP HANA Cloud"]
-        H[("Dataset Concurso + Esquema GeoPredIA\n(Zonas, Evaluaciones, Alertas IoT, Auditoría)")]
-    end
-
-    subgraph IOT ["GeoRisk Sentinel (IoT)"]
-        I["ESP32 + Sensores\n(Humedad Suelo, Turbidez Agua, Polvo PM2.5)"]
-    end
-
-    W --> S
-    W --> A
-    H --> S
-    S --> SIM
-    SIM -->|"Exportación / Carga POV"| A
-    A --> H
-    A --> B
-    A --> MA
-    B -->|"Registra decisión"| A
-    I -->|"HTTPS POST /telemetry"| A
+flowchart LR
+    HANA[HANA Cloud: dataset común] --> SAC[SAC: cálculo de índices y dashboard]
+    SAC -->|Exportación y mapeo CSV| API[API GeoPredIA: snapshot versionado]
+    API --> GEO[Agente geológico]
+    API --> ENV[Agente ambiental]
+    API --> SOC[Agente social]
+    GEO --> COORD[Coordinador]
+    ENV --> COORD
+    SOC --> COORD
+    COORD --> REVIEW[Revisión humana]
+    API -->|Adaptador autenticado| BPA[SAP Build Process Automation]
+    BPA -->|Callback autenticado| REVIEW
+    ESP[ESP32 y sensores] -->|HTTPS y clave de dispositivo| API
+    UI[Frontend] --> API
+    WZ[Work Zone: acceso a aplicaciones y tareas] --> UI
+    WZ --> SAC
+    WZ --> BPA
 ```
 
----
+La API local usa **FastAPI + SQLite** para poder ensayar sin infraestructura adicional. `POST /api/integrations/hana/publish` replica los registros pendientes en `GPI_EVENT_STORE` del esquema del equipo, de forma explícita e idempotente; no escribe en el dataset común. El scoring oficial debe implementarse **dentro de SAC**. Las tablas del equipo en HANA y el flujo BPA se configuran según [la guía SAP](docs/SAP_GUIDE.md); el prototipo local no los sustituye en la entrega del concurso.
 
-## 4. Estructura del Repositorio
+## Cómo se evalúa el riesgo
 
-```
-GeoPredIA/
-├── README.md                      # Documentación ejecutiva principal
-├── LICENSE                        # Licencia MIT
-├── docs/                          # Guías conceptuales y técnicas
-│   ├── ARCHITECTURE.md            # Diagramas y flujos de arquitectura detallados
-│   ├── SAP_GUIDE.md               # Manual de uso e integración con SAP BTP y SAC
-│   ├── TEAM_ROLES.md              # Matriz de roles y responsabilidades (5 integrantes)
-│   ├── MULTI_AGENT_AI.md          # Especificación de agentes inteligentes
-│   └── IOT_SENTINEL.md            # Hardware, calibración y protocolo HTTPS
-├── database/                      # Scripts DDL/CDS para SAP HANA Cloud
-├── analytics/                     # Definiciones de modelos y formulas SAC
-├── backend/                       # Servicio SAP CAP (Node.js/Express)
-├── frontend/                      # App SAPUI5 / Portal Fiori
-├── workflows/                     # Definiciones de flujo en SAP Build Process Automation
-├── agents/                        # Servicio Python con Framework Multi-Agente (FastAPI)
-└── iot/                           # Firmware ESP32 (C++) y Simulador de Telemetría (Python)
-```
+La demo usa subíndices ficticios de 0 a 100 y pesos ilustrativos `40 % geológico + 35 % ambiental + 25 % social`. El panel permite comparar una nueva versión con otros pesos que sumen 100 %. La clasificación de ejemplo es bajo `<40`, medio `40–69.99` y alto `>=70`.
 
----
+Estos pesos y umbrales **no están validados científicamente**. Deben justificarse con las variables del dataset del evento antes de implementarlos en SAC. Las restricciones críticas deben revisarse separadamente del promedio. Riesgo no equivale a rentabilidad.
 
-## 5. Modelo de Evaluación y Scoring
+- Una dimensión ausente produce un global ausente, nunca cero.
+- Una evaluación importada no se recalcula en Python ni con un LLM.
+- El CSV conserva modelo, dataset, fecha y valores. Su origen declarado como SAC todavía necesita verificación humana.
+- Las mediciones IoT complementan la evidencia; no modifican automáticamente el score.
+- Se conserva cada versión. Una decisión no se sobrescribe: se crea una nueva evaluación para una nueva revisión.
 
-El cálculo del **Índice Global de Riesgo** combina tres dimensiones fundamentales:
+Ver [modelo SAC](analytics/sac_model_spec.md) y [contrato de exportación](analytics/sac_snapshot_contract.md).
 
-$$\text{Riesgo Global} = 0.40 \times \text{Riesgo Geológico} + 0.35 \times \text{Riesgo Ambiental} + 0.25 \times \text{Riesgo Social}$$
+## Multiagentes: adaptación del proyecto financiero
 
-### Sensibilidad de Escenarios
-1. **Escenario Base**: Ponderación estándar (40% Geo / 35% Env / 25% Soc).
-2. **Escenario Alta Prioridad Ambiental**: Reajuste de sensibilidad (25% Geo / 50% Env / 25% Soc).
-3. **Escenario Adverso Hipotético**: Incremento de severidad en variables críticas ante sequía o sismicidad elevada.
+Implementación original inspirada en el patrón del [repositorio de agentes financieros](https://github.com/Alpaca-AI-Trading-Hackhaton-lablab-ai/alpaca-ai-trading-agents-hackathon-lablab.ai): agentes especializados, salidas estructuradas, registro de ejecución y separación de explicación frente a autorización. No se copiaron archivos de ese proyecto ni se usan sus credenciales o servicios de inversión.
 
----
+| Rol | Evidencia que considera | Resultado |
+|---|---|---|
+| Geológico | Subíndice y evidencias geológicas | Factores a revisar, incertidumbre y datos faltantes |
+| Ambiental | Evidencias ambientales y telemetría de la zona | Observaciones, procedencia y necesidad de línea base |
+| Social | Evidencias sociales documentadas | Aspectos que requieren consulta y revisión humana |
+| Coordinador | Hallazgos de los tres especialistas | Resumen y razones de revisión, conservando el score |
 
-## 6. Sistema Multi-Agente con IA (GeoPredIA AI)
+Sin claves, el panel indica **agentes por reglas**. Para activar el LLM, configura `LLM_ENABLED=true` y `GROQ_API_KEY` únicamente en `.env`. El modelo solo selecciona enfoques y referencias existentes mediante JSON validado. No recibe autoridad para modificar scores ni aprobar una zona. Fallos del proveedor o referencias inventadas activan un fallback explícito a reglas. Las solicitudes pueden consumir cuota del proveedor.
 
-Para ir más allá del cálculo numérico, GeoPredIA incorpora un equipo de 4 agentes especializados:
+## IoT de S/100
 
-- 🪨 **Agente Geológico**: Evalúa riesgos de estabilidad de terreno, tipo de roca y nivel de incertidumbre.
-- 🌿 **Agente Ambiental**: Audita la calidad del agua, dispersión de polvo y lecturas anómalas de sensores.
-- 🤝 **Agente Social**: Analiza conflictos históricos, acuerdos comunitarios y nivel de licencia social.
-- 🧠 **Agente Coordinador**: Sintetiza los reportes, detecta contradicciones y redacta la recomendación técnica final para el especialista.
+**ESP32 + DHT11 + humedad capacitiva de suelo v1.2 + sonda DS18B20.** Mide temperatura/humedad del aire, cambios relativos de humedad del suelo y temperatura del agua. No mide pH, turbidez, metales ni PM2.5.
 
----
+1. Define `DEVICE_API_KEY` en `.env` y reinicia la API.
+2. Configura el simulador con la misma clave en `GEOPREDIA_DEVICE_KEY`.
+3. Prueba una lectura sintética:
 
-## 7. Extensión IoT: GeoRisk Sentinel
-
-Dispositivo de monitoreo de campo en tiempo real conectado via **HTTPS TLS** a SAP CAP:
-- **ESP32 Microcontroller**: Unidad central con conectividad WiFi.
-- **Sensor SEN0193**: Medición capacitiva de humedad de suelo (previene falso riesgo por corrosión).
-- **Sensor TS-300B**: Turbidez de agua en fuentes cercanas a la zona de exploración.
-- **Sensor GP2Y1010AU0F / SDS011**: Concentración de partículas de polvo PM2.5 en suspensión.
-
----
-
-## 8. Reparto de Trabajo y Equipo (5 Personas)
-
-| Integrante | Rol | Responsabilidad Principal | Entregable Clave |
-| :--- | :--- | :--- | :--- |
-| **Persona 1** | **Base de Datos & SAP HANA** | Modelado DDL/CDS, ingesta y limpieza del dataset oficial en HANA Cloud. | Vistas SQL y tablas de esquemas listas en HANA. |
-| **Persona 2** | **Scoring & SAP Analytics (SAC)** | Implementación del modelo de scoring, dashboards interactivas y escenarios de sensibilidad. | Dashboard SAC completo con exportación POV. |
-| **Persona 3** | **Workflows & SAP Process Automation** | Diseño de formularios de revisión técnica y orquestación del flujo de aprobación. | Workflow BPA activo con logs de auditoría. |
-| **Persona 4** | **Integración, Work Zone & CAP** | Desarrollo del servicio SAP CAP (Node.js), configuración de Work Zone Fiori y APIs. | Portal unificado funcional y conector OData/REST. |
-| **Persona 5** | **Multi-Agentes IA, IoT & Demo** | Desarrollo del firmware ESP32 / simulador IoT, agentes de IA en Python y ensayo de la demo. | Sistema Multi-Agente + Unidad IoT GeoRisk Sentinel. |
-
----
-
-## 9. Guía de Inicio Rápido
-
-### Prerequisitos
-- Node.js >= v18.x
-- Python >= 3.10
-- Git
-
-### Ejecución del Simulador IoT (Sin Hardware)
-```bash
-cd iot/simulator
-python iot_simulator.py
+```powershell
+# Define GEOPREDIA_DEVICE_KEY localmente; no la pegues en documentación ni commits.
+python iot/simulator/sentinel_simulator.py --url http://127.0.0.1:8000/api/telemetry --zone-id Z-001 --once
 ```
 
-### Ejecución del Servicio Multi-Agente de IA
-```bash
-cd agents
-pip install -r requirements.txt
-python main.py
+El botón del frontend también genera una muestra claramente sintética, sin hardware. [Presupuesto, conexiones y calibración](docs/IOT_SENTINEL.md). El firmware envía valores nulos ante fallos, exige certificado CA para HTTPS y usa ADC1 para evitar el conflicto con Wi-Fi.
+
+## Organización
+
+```text
+agents/                 API, modelos, motor multiagente y adaptadores SAP
+frontend/console/       Interfaz HTML/CSS/JS sin dependencias ni CDN
+analytics/              Modelo SAC, mapeo de variables y CSV de ejemplo
+database/src/           DDL para tablas propias del equipo en HANA
+workflows/              Blueprint BPA y esquema del callback
+iot/                    Firmware, simulador y pruebas de transporte
+docs/                   Arquitectura, SAP, equipo, IoT y guion de demo
+tests/                  Pruebas de API, agentes y reglas de integridad
+scripts/                Inicio local y utilidades de entrega
 ```
 
----
+Los directorios iniciales `backend/` y `frontend/webapp/` del repositorio pueden mantenerse como antecedentes. La entrada verificada de esta versión es **`agents.api:app` + `frontend/console/`**. Un nombre de carpeta CAP o un archivo CDS por sí solos no constituyen un despliegue SAP CAP.
 
-*Desarrollado con pasión para ULatinHack por el equipo GeoPredIA.* 🚀
+## Validación
+
+[Resultados y alcance de la validación](docs/VALIDATION.md).
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -m unittest discover -s iot/simulator -p "test_*.py" -v
+node --check frontend/console/app.js
+```
+
+Las pruebas cubren datos faltantes, versiones, importación SAC sin recálculo, referencias de agentes, autenticación IoT, repetición de lecturas y decisiones, y correspondencia de instancia BPA. No invocan servicios de pago. Las integraciones SAP y el firmware requieren pruebas adicionales en el entorno correspondiente.
+
+### Paquete y publicación desde una terminal autenticada
+
+`python scripts/package.py` crea un ZIP de fuentes y un manifiesto de hashes, excluyendo credenciales y datos locales. Si la publicación desde el entorno de trabajo está bloqueada, `./scripts/publish.ps1` puede ejecutarse en una terminal normal con Git y tu cuenta autorizada. Clona el repositorio, comprueba la versión base revisada, aplica solo los archivos del paquete, crea un commit con tu identidad de Git y hace un push normal a `main`. Si el remoto cambió, se detiene para integrar ese trabajo; no fuerza cambios ni reescribe historial. El script no inicia sesión ni solicita tokens dentro del proyecto.
+
+## Equipo y demo
+
+- [Reparto entre cinco personas y dependencias](docs/TEAM_ROLES.md)
+- [Arquitectura y decisiones técnicas](docs/ARCHITECTURE.md)
+- [Guion de demo de tres minutos](docs/DEMO.md)
+- [Pasos SAP y límites del prototipo](docs/SAP_GUIDE.md)
+
+La revisión local usa el nombre escrito por el especialista y no verifica su identidad. Para una entrega desplegada, integrar la identidad y roles del tenant SAP, HTTPS y almacenamiento HANA de las revisiones. No publicar el servidor local sin configurar autenticación.
