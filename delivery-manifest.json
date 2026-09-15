@@ -1,0 +1,211 @@
+{
+  "repository": "https://github.com/Baneado85/GeoPredIA.git",
+  "base_commit": "a3330273eb7ac7a9eb0acf461ada9630a3bdfc76",
+  "branch": "main",
+  "files": [
+    {
+      "path": ".dockerignore",
+      "sha256": "38e678d1181b79ec30f611efecbba9aeac1fe79698da797a4b5e9a00cbe0a711"
+    },
+    {
+      "path": ".env.example",
+      "sha256": "ff5c211645e848ff5912e934bef90871fa24698ed57a6b290ff0ebcee8ef67a0"
+    },
+    {
+      "path": ".github/workflows/checks.yml",
+      "sha256": "6c33b566d1d3c06605ef080559e5b038418ee46132a318a04af52c1c28d2c886"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "b5dc454720d74f3077f3febc1ea9816dac7e285cc1cfbcb25485baa2b0cfc4c2"
+    },
+    {
+      "path": "agents/__init__.py",
+      "sha256": "3ad13cd7a1f6f5ac8af4a8b1d2fac3174a8adbb314eabfbab02011041e0735ab"
+    },
+    {
+      "path": "agents/api.py",
+      "sha256": "a94c7e7ab1fee48ab18a2171637a6fd140371b947320cc2c2ffaf89e356b1f26"
+    },
+    {
+      "path": "agents/config.py",
+      "sha256": "4663c38027946f5c0c7c3f3eb74de9ffc0ec9fb9473228180cc51a531ede7df4"
+    },
+    {
+      "path": "agents/data.py",
+      "sha256": "e1954bc9099a8f57027a7e6f8412105a4257010d28f51e35e4f4d211c7931e6e"
+    },
+    {
+      "path": "agents/engine.py",
+      "sha256": "a1558ea2fa33e88614272b6d203bea67cc68a3f58a322cf6ad7501efeeefc5b7"
+    },
+    {
+      "path": "agents/hana_publish.py",
+      "sha256": "9e900da2bc9107e6acb84953d64318e0b85f155a0d37ae5b3481d257e8f47708"
+    },
+    {
+      "path": "agents/integrations.py",
+      "sha256": "0f07af2f15e94e022f93aac0ffec601fca15d9affa1019e6077085c4a89920d8"
+    },
+    {
+      "path": "agents/models.py",
+      "sha256": "49cf0e86bcbf2e029c235dd8a430e7719e0d3c0844235d85c5d7dd31d5a40f39"
+    },
+    {
+      "path": "agents/sac.py",
+      "sha256": "37d38e72aaba00b505ee6baf0da837a7d6d8d2cf84f1379d6750c5bf74ec9e93"
+    },
+    {
+      "path": "agents/store.py",
+      "sha256": "231a8390c1cd6ea826ad9eb16155b5005eedd5a5f7e6b82cb5189ff7cd820885"
+    },
+    {
+      "path": "analytics/sac_demo_snapshot.csv",
+      "sha256": "8bda44f9347e310579f58c27756f0d34e4f05215bd4f248db465be464f288979"
+    },
+    {
+      "path": "analytics/sac_indicator_mapping.template.csv",
+      "sha256": "2fc93a8d1f9f093f6fac2a6110b6374f4f0b65011242be62ce9faf92f5fb0fee"
+    },
+    {
+      "path": "analytics/sac_model_spec.md",
+      "sha256": "4a9baa283d9df35d57460e0294937e0598982327f49ce30f1081c4da9032ca13"
+    },
+    {
+      "path": "analytics/sac_snapshot_contract.md",
+      "sha256": "be4971951af1929cfc0cea928ed41a6773da9e1c9c7c3a8fbba8aec7f533d6ea"
+    },
+    {
+      "path": "backend/README.md",
+      "sha256": "af41239cf3eabe03ca9cdd0abfdc0892f2bc7312db08e66e06abe77bbe26b4e0"
+    },
+    {
+      "path": "database/src/geopredia_event_store.sql",
+      "sha256": "472d6f4fa83fcd3ccf315d4ec3722a0cca34548a3b64dae9edcfd730aaca1920"
+    },
+    {
+      "path": "database/src/geopredia_extension.sql",
+      "sha256": "194869b221e76d95770964c969b4f67c67cb2bf80fc947fa7516530464c5735f"
+    },
+    {
+      "path": "Dockerfile",
+      "sha256": "1baf1ed64dc3216df82489c186d4d52b3c8871feeb27ef15b08c5b7d0807dfb3"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "sha256": "50582d9dedf843483253559a408ac2056788beef04fa17a0a9e0746ec7c56d98"
+    },
+    {
+      "path": "docs/DEMO.md",
+      "sha256": "795c0ad7a5b6f59fcb684995a39c72568576f335f704dc2de4f66b9bb831aef0"
+    },
+    {
+      "path": "docs/IOT_SENTINEL.md",
+      "sha256": "22031c96e0ee1c6b897a29bfaf0382551a17f2232b7168c27b71840a00136725"
+    },
+    {
+      "path": "docs/SAP_GUIDE.md",
+      "sha256": "52526e175570d184fee9a0af2d40db4c3de7c76044e44947cc714182c223c76b"
+    },
+    {
+      "path": "docs/TEAM_ROLES.md",
+      "sha256": "566fed282b91e51a869ab9b468bf686256015f6cfe2de70bc6918d9feb9ffedf"
+    },
+    {
+      "path": "docs/VALIDATION.md",
+      "sha256": "0c5a424478b3bf6e4fedfc99fdca66a8ea371a492c1336cbc425858893fea77a"
+    },
+    {
+      "path": "frontend/console/app.js",
+      "sha256": "9bd126d06c373e7719bb32f4aa0455f69238f2c46ed94dd1c9389f4616487f52"
+    },
+    {
+      "path": "frontend/console/index.html",
+      "sha256": "5f1083c8466d20a1667d9142a9b92e74a2582767ff5b971020a7fc6785f419da"
+    },
+    {
+      "path": "frontend/console/sac_demo_snapshot.csv",
+      "sha256": "8bda44f9347e310579f58c27756f0d34e4f05215bd4f248db465be464f288979"
+    },
+    {
+      "path": "frontend/console/styles.css",
+      "sha256": "e8edca4818dd05fdc2b6d21898db2e6f515131800cabdfba52c43a373cc13743"
+    },
+    {
+      "path": "index.html",
+      "sha256": "2688c765fb746d8017511860fed95cd109574637363ab0a9a83f840e225667d6"
+    },
+    {
+      "path": "iot/firmware/geopredia_sentinel_v1/.gitignore",
+      "sha256": "de333265b5bee5bb99f05862b58a8dc456840a3e89ad792beec659308bf03c7f"
+    },
+    {
+      "path": "iot/firmware/geopredia_sentinel_v1/geopredia_sentinel_v1.ino",
+      "sha256": "9105e48c100800ab2c9dd5a09862db9167b9d85fc54584770e99bbda80eae25b"
+    },
+    {
+      "path": "iot/firmware/geopredia_sentinel_v1/secrets.example.h",
+      "sha256": "d892aee1c94ea10dba501bd13186c69bde9a78a1586e06acdfe8968e800be7c9"
+    },
+    {
+      "path": "iot/simulator/.gitignore",
+      "sha256": "32dae3052f331ee34d628ef535709b301259a45df7c7522c4d35dcf49873f00b"
+    },
+    {
+      "path": "iot/simulator/sentinel_simulator.py",
+      "sha256": "ca37146ec8d0fa5d3e458ea958955bbea28f34ab25cf2186f29a3ac0066348c0"
+    },
+    {
+      "path": "iot/simulator/test_sentinel_simulator.py",
+      "sha256": "5ab43799c8cf188b5667bb6efe77f72655b16a1f838bc0a8c710ddeed5abfd04"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "6fb86a547489a02cfda4f64e80e65c973f815abb014f3ad487c9038d462a7168"
+    },
+    {
+      "path": "README.md",
+      "sha256": "80421b22412adb79bfed50f573d62c3b1aaa342a80ed168a248db7aa6c9d0a33"
+    },
+    {
+      "path": "requirements-sap.txt",
+      "sha256": "3ac7ff73d1579d9760f09f549fc6fac70843777e3c37c7939ce556088c5372d6"
+    },
+    {
+      "path": "requirements.txt",
+      "sha256": "78bb4517a9cda12b8832de362ba3c1000fe8b98c4f6dd979733c392913e4d5b1"
+    },
+    {
+      "path": "scripts/package.py",
+      "sha256": "e9f4dc0defdd13e9243672718341ead4de54140b212e61f5fb286050524ac5d0"
+    },
+    {
+      "path": "scripts/publish.ps1",
+      "sha256": "000ff77d83447eb36667f0b0c6b237a5e5023785b06336a47fa565de5649117d"
+    },
+    {
+      "path": "scripts/run.ps1",
+      "sha256": "25d020034b643dcc02fc6f1d4843c4ce2e93b1f5abd1b39d72aeaf0888242d39"
+    },
+    {
+      "path": "tests/test_agents.py",
+      "sha256": "4905728e0cee35f8dd40853afe543c19ed0d1c83c4b693690236e2a65e5c0095"
+    },
+    {
+      "path": "tests/test_api.py",
+      "sha256": "8fbfe03cd19e06c3eb5ecfe2536b16d05edd29d2cf930a66e1055c38b5e04f94"
+    },
+    {
+      "path": "tests/test_hana_publish.py",
+      "sha256": "709cc930c2fe41873178ed1ad72e55e7b00bf4cddf66c18aa34febfdd4ce715d"
+    },
+    {
+      "path": "workflows/forms/geopredia_review.schema.json",
+      "sha256": "552ccf489ea78450f23eaeb7e270d8e4528c532260e16b2e38a01f26754f6a8b"
+    },
+    {
+      "path": "workflows/geopredia_process_blueprint.md",
+      "sha256": "a1f4a53dd8ef655b250e0bc5cd6268a364650847935d418a6ef7edf947541f49"
+    }
+  ]
+}
