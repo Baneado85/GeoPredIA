@@ -1,0 +1,4 @@
+official_column,dimension,unit,risk_direction,reference_low,reference_high,within_dimension_weight,required,rule_reference,notes
+REEMPLAZAR_COLUMNA_REAL,geological,REEMPLAZAR,increasing,,,1,true,REQUIERE_JUSTIFICACION,Plantilla sin datos oficiales
+REEMPLAZAR_COLUMNA_REAL,environmental,REEMPLAZAR,increasing,,,1,true,REQUIERE_JUSTIFICACION,Plantilla sin datos oficiales
+REEMPLAZAR_COLUMNA_REAL,social,REEMPLAZAR,increasing,,,1,true,REQUIERE_JUSTIFICACION,Plantilla sin datos oficiales
