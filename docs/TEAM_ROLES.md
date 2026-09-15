@@ -1,55 +1,50 @@
-# 👥 Reparto de Trabajo y Matriz RACI (Equipo de 5 Personas)
+# Equipo de cinco: orden y dependencias
 
-## 1. Distribución de Responsabilidades
+Objetivo del MVP: una zona evaluada en SAC a partir del dataset del reto, un informe de especialistas basado en esa evaluación y una decisión humana trazable en BPA, accesibles desde Work Zone. Un frontend básico y Sentinel permiten demostrar el recorrido. Priorizar primero ese recorrido completo.
 
-| Integrante | Rol Oficial | Herramientas Principales | Entregable Principal |
-| :--- | :--- | :--- | :--- |
-| **Persona 1** | **Ingeniero de Datos / SAP HANA Cloud** | SAP HANA Studio, SQL, DDL, CAP CDS | Base de datos limpia con dataset oficial del concurso y vistas SQL. |
-| **Persona 2** | **Analista SAC / Modelo de Scoring** | SAP Analytics Cloud (SAC), Calculations | Dashboard interactivo con scoring dimensional y simulador de sensibilidad. |
-| **Persona 3** | **Especialista Process Automation** | SAP Build Process Automation, Form Builder | Workflow de revisión técnica completo con formularios de decisión. |
-| **Persona 4** | **Arquitecto de Integración & Portal** | SAP CAP (Node.js), SAP Build Work Zone, SAPUI5 | Portal unificado Work Zone con backend API expuesto. |
-| **Persona 5** | **Especialista IA & IoT / Metodólogo** | Python, FastAPI, ESP32 (C++), Sensores | Sistema Multi-Agente de IA + Dispositivo GeoRisk Sentinel. |
+## Responsables
 
----
+| Persona | Frente | Entregables | Depende de |
+|---|---|---|---|
+| 1 | Datos HANA + contrato | Diccionario real, IDs/unidades, faltantes, vistas y versiones; extensión HANA si hay permisos | Acceso al dataset; acuerdos con persona 2 |
+| 2 | Metodología + SAC | Reglas justificadas, tres subíndices, score, KPIs, ranking, escenarios y export reproducible | Contrato/datos de 1; apoyo de 5 para casos de prueba |
+| 3 | Multiagentes + API | Especialistas geológico/ambiental/social y coordinador, evidencia, informe, carga de snapshots e integración del proceso | Contrato de 1+2; payload BPA acordado con 4 |
+| 4 | BPA + frontend + Work Zone | Formulario/revisión, callback, interfaz básica y accesos del sitio | Puede iniciar con snapshot sintético; cierre requiere SAC + API de 3 |
+| 5 | IoT + pruebas + presentación | Kit ≤S/100, calibración, telemetría, pruebas del recorrido, video y guion | Contrato de telemetría con 3; integra evidencia con 2 |
 
-## 2. Matriz RACI
+La persona 4 tiene tres entregables: primero la revisión local/interfaz mínima, luego el proceso BPA y finalmente los accesos Work Zone. La persona 3 apoya la integración del frontend cuando el motor de especialistas y la API estén listos. La persona 5 prepara el guion desde el inicio y recibe de cada responsable sus evidencias; no escribe toda la presentación al final.
 
-- **R**: Responsable (quien realiza la tarea)
-- **A**: Aprobador (quien rinde cuentas)
-- **C**: Consultado (aporta información)
-- **I**: Informado (se mantiene actualizado)
+## Empezar aquí, en paralelo
 
-| Tarea / Hito | Persona 1 | Persona 2 | Persona 3 | Persona 4 | Persona 5 |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| Modela Tablas e Ingesta Dataset en HANA | **R/A** | C | I | C | I |
-| Diseña Fórmula de Scoring & Ponderaciones | C | **R** | I | I | **A** |
-| Construye Dashboards SAC & Escenarios | I | **R/A** | I | C | C |
-| Diseña Formulario & Workflow en SAP BPA | I | C | **R/A** | C | I |
-| Desarrolla Servicio Backend CAP | C | C | C | **R/A** | C |
-| Configura SAP Build Work Zone Portal | I | I | C | **R/A** | I |
-| Desarrolla Sistema Multi-Agente de IA | I | I | I | C | **R/A** |
-| Desarrolla Firmware ESP32 & Sensores IoT | I | I | I | C | **R/A** |
-| Ensayo de la Demo & Presentación Final | C | C | C | C | **R/A** |
+1. **Todos:** revisar la problemática, criterios de evaluación y accesos; acordar una única demostración y distinguir datos oficiales/sintéticos.
+2. **1 + 2:** inspeccionar el dataset y cerrar claves, unidades, reglas de faltantes y normalización. Este es el primer desbloqueo crítico.
+3. **3 + 4:** cerrar JSON/CSV de evaluación y callback; arrancar API/frontend y formulario con un snapshot sintético etiquetado.
+4. **5 + 3:** ejecutar el simulador contra la API; después cablear un sensor cada vez, sin esperar a tener SAP listo.
+5. **2 + 5:** definir tres casos de aceptación: evaluación completa, datos insuficientes y condición que requiere revisión humana.
 
----
+## Hitos y dependencias
 
-## 3. Plan de Trabajo Hito por Hito
+| Hito | Qué debe existir | Qué desbloquea |
+|---|---|---|
+| A. Contrato | Campos reales, IDs y versiones; formato de snapshot acordado | SAC, API, UI y proceso pueden avanzar sin cambiar nombres |
+| B. Evaluación | Fórmulas SAC verificadas y al menos tres KPIs | Ranking, escenario y export oficial |
+| C. Snapshot | Export adaptado y validado con ID de evaluación | Agentes explican datos concretos; revisión conserva versión |
+| D. Revisión | BPA recibe caso, humano decide y callback registra resultado | Historia completa de una decisión |
+| E. Acceso | Frontend/API desplegados y URLs reales | Sitio Work Zone usable por el jurado |
+| F. Sentinel | Medición física calibrada o simulación explícita | Evidencia ambiental complementaria, sin bloquear el MVP SAP |
+| G. Ensayo | Recorrido repetible y fallos controlados | Video de 3 minutos y exposición de 10 minutos |
 
-### Hito 1: Recorrido Base Funcional (Horas 0-12)
-- Persona 1 expone datos en HANA.
-- Persona 2 crea el cálculo base en SAC.
-- Persona 3 publica el formulario en BPA.
-- Persona 4 prueba la conexión manual y portal Work Zone.
+**Cadena crítica:** datos entendidos → reglas acordadas → evaluación SAC correcta → snapshot → revisión BPA. IoT y explicaciones multiagente avanzan en paralelo; una falla de sensor debe mostrarse como dato ausente sin detener la evaluación de otras zonas.
 
-### Hito 2: Comparación y Explicación (Horas 12-24)
-- Persona 2 añade ranking y desgloses.
-- Persona 5 integra el servicio Multi-Agente en Python para generar la explicación cualitativa.
+## Papel de los multiagentes
 
-### Hito 3: Sensibilidad e Integración IoT (Horas 24-36)
-- Persona 2 configura los 3 escenarios predefinidos en SAC.
-- Persona 5 flashea el ESP32 o ejecuta el simulador IoT.
-- Persona 4 conecta las alertas de IoT a SAP CAP y BPA.
+- Geológico: interpreta indicadores geológicos disponibles y sus incertidumbres.
+- Ambiental: interpreta indicadores ambientales y separa telemetría observada/simulada.
+- Social: interpreta la evidencia social disponible; no inventa comunidades, conflictos o aceptación.
+- Coordinador: reúne hallazgos, contradicciones, faltantes y pasos sugeridos para el revisor.
 
-### Hito 4: Ensayos y Entregables (Horas 36-48)
-- Pruebas del flujo completo end-to-end.
-- Grabación de video demostrativo (3 minutos) y slide deck ejecutiva.
+Todos reciben la misma versión de evaluación; sus respuestas enlazan evidencia. Ninguno modifica el score SAC ni firma la decisión humana. Un modo de reglas local permite ensayar sin consumo de API; si se conecta un modelo, conservar procedencia, validar estructura y evitar enviar datos sensibles sin autorización.
+
+## Antes de presentar
+
+Cada responsable aporta una captura verificable y una frase sobre su resultado. Preparar un plan de contingencia con snapshots previamente exportados, distinguiéndolos de datos en vivo. Ensayar los estados sin datos, sensor desconectado, API no disponible y usuario sin permisos. No afirmar que una pantalla local prueba una conexión a SAP.
