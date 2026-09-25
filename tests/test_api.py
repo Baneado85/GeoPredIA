@@ -98,6 +98,19 @@ class APIContractTests(unittest.TestCase):
     def test_assistant_rejects_unknown_zone(self):
         self.assertEqual(self.client.post("/api/assistant/query", json={"zone_id": "NO-EXISTE", "question": "Resume el riesgo"}).status_code, 404)
 
+    def test_assistant_handles_greeting_without_forcing_risk_summary(self):
+        response = self.client.post("/api/assistant/query", json={"zone_id": "Z-001", "question": "Hola, ¿cómo estás?"})
+        self.assertEqual(response.status_code, 200)
+        value = response.json()
+        self.assertIn("¡Hola!", value["answer"])
+        self.assertEqual(value["facts"], [])
+
+    def test_assistant_redirects_unrelated_question_to_its_scope(self):
+        response = self.client.post("/api/assistant/query", json={"zone_id": "Z-001", "question": "Cuéntame un chiste"})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("GeoPredIA", response.json()["answer"])
+        self.assertEqual(response.json()["facts"], [])
+
     def review_body(self, eid=None):
         return {"evaluation_id": eid or self.eid, "reviewer": "Especialista Demo", "decision": "approved", "justification": "Revisión de demostración con evidencia sintética."}
 

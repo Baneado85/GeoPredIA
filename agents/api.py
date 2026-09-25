@@ -153,8 +153,24 @@ def create_app(db_path=None):
         ]
         if dominant:
             facts.append(f"Dimensión más alta: {labels.get(dominant[0], dominant[0])} ({dominant[1]}/100)")
-        question = body.question.casefold()
-        if missing or "falta" in question:
+        question = body.question.casefold().strip(" ¿?¡!.,")
+        greetings = ("hola", "buenas", "buenos días", "buenas tardes", "buenas noches", "cómo estás", "como estas", "qué tal", "que tal")
+        thanks = ("gracias", "muchas gracias", "te agradezco")
+        capabilities = ("qué puedes hacer", "que puedes hacer", "cómo puedes ayudar", "como puedes ayudar", "ayuda")
+        risk_terms = ("riesgo", "zona", "factor", "dimensión", "dimension", "falta", "dato", "evaluación", "evaluacion", "social", "ambiental", "geológico", "geologico", "resum")
+        if any(phrase in question for phrase in greetings):
+            answer = f"¡Hola! Estoy listo para ayudarte con GeoPredIA. Ahora está seleccionada {zone['name']}. Puedes pedirme un resumen de su riesgo, su factor principal o los datos que faltan."
+            facts = []
+        elif any(phrase in question for phrase in thanks):
+            answer = "¡De nada! Si quieres, puedo resumir otra zona o explicar cuál de sus tres dimensiones presenta el valor más alto."
+            facts = []
+        elif any(phrase in question for phrase in capabilities):
+            answer = "Puedo resumir el riesgo de una zona, comparar sus dimensiones geológica, ambiental y social, identificar datos faltantes y señalar qué evidencia debe revisar el equipo. No cambio puntuaciones ni tomo la decisión final."
+            facts = []
+        elif not any(term in question for term in risk_terms):
+            answer = "Puedo ayudarte con las evaluaciones de GeoPredIA. Pregúntame, por ejemplo: «Resume el riesgo», «¿Cuál es el factor principal?» o «¿Qué información falta?»."
+            facts = []
+        elif missing or "falta" in question:
             detail = ", ".join(missing) if missing else "ninguno registrado"
             answer = f"En {zone['name']}, los campos faltantes son: {detail}. Un dato ausente requiere revisión y no se interpreta como riesgo cero."
         elif "por qué" in question or "porque" in question or "factor" in question:
