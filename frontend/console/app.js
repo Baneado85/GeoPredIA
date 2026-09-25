@@ -10,7 +10,7 @@ const SCENARIOS = {
   environmental: { label: "Mayor peso ambiental", weights: { geological: 0.25, environmental: 0.55, social: 0.2 } },
   social: { label: "Mayor peso social", weights: { geological: 0.25, environmental: 0.25, social: 0.5 } },
 };
-const VIEW_NAMES = { overview: "Panorama", agents: "Multiagentes", sentinel: "IoT Sentinel", reviews: "Revisión humana", data: "Datos e integración" };
+const VIEW_NAMES = { overview: "Panorama", agents: "Multiagentes", sentinel: "IoT Sentinel", reviews: "Revisión humana", assistant: "Asistente", data: "Datos e integración" };
 const state = { zones: [], selectedId: null, status: null, offline: true, reviews: [], runs: [], telemetry: [], selectedRunId: null, selectionSequence: 0, loadSequence: 0, selectionLoading: false, scenarioKey: "base", busy: new Set() };
 const numberFormat = new Intl.NumberFormat("es-PE", { maximumFractionDigits: 1 });
 const dateFormat = new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -276,6 +276,7 @@ function updateButtons() {
     ["simulate-button", readonly || !hasZone || state.status?.mode !== "demo" || state.busy.has("simulate"), "simulate", "Generando lectura…", "Generar lectura simulada"],
     ["review-submit", readonly || !ev || ev.review_status !== "pending" || state.busy.has("review"), "review", "Guardando revisión…", ev && ev.review_status !== "pending" ? "Esta versión ya fue revisada" : "Guardar revisión"],
     ["import-submit", readonly || state.busy.has("import"), "import", "Validando importación…", "Validar e importar"],
+    ["assistant-submit", readonly || !hasZone || state.busy.has("assistant"), "assistant", "Consultando…", "Consultar"],
     ["audit-button", readonly || state.busy.has("audit"), "audit", "Consultando…", "Consultar bitácora"],
     ["evaluate-button", readonly || !hasZone || ev?.source === "sac" || state.status?.mode !== "demo" || state.busy.has("evaluate"), "evaluate", "Evaluando…", ev?.source === "sac" ? "Valores conservados del CSV" : "Evaluar escenario demo"],
   ];
@@ -324,6 +325,19 @@ $("review-form").addEventListener("submit", (event) => {
   if (body.reviewer.length < 2 || body.justification.length < 10) { setError(new Error("Completa tu nombre y una justificación de al menos 10 caracteres.")); return; }
   mutate("review", async () => { await api("reviews", { method: "POST", body: JSON.stringify(body) }); if (evaluation()?.id === ev.id) { $("decision").value = ""; $("justification").value = ""; } await refreshDataAfterWrite(); setNotice(`La revisión de ${ev.id} quedó registrada con la justificación de ${body.reviewer}.`, true); });
 });
+$("assistant-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!event.currentTarget.reportValidity()) return;
+  const body = { zone_id: $("assistant-zone-select").value, question: $("assistant-question").value.trim() };
+  mutate("assistant", async () => {
+    const result = await api("assistant/query", { method: "POST", body: JSON.stringify(body) });
+    const facts = add(node("ul", "assistant-facts"), ...asArray(result.facts).map((fact) => node("li", "", fact)));
+    const actions = add(node("div", "assistant-actions"), ...asArray(result.suggested_actions).map((action) => node("span", "muted-pill", action)));
+    $("assistant-answer").className = "assistant-answer";
+    $("assistant-answer").replaceChildren(node("p", "assistant-message", result.answer), facts, actions, node("small", "", result.notice));
+  });
+});
+document.querySelectorAll("[data-prompt]").forEach((button) => button.addEventListener("click", () => { $("assistant-question").value = button.dataset.prompt; $("assistant-question").focus(); }));
 $("import-form").addEventListener("submit", (event) => {
   event.preventDefault(); const file = $("csv-file").files?.[0]; if (!file) return;
   if (file.size > 2 * 1024 * 1024) { setError(new Error("El archivo supera 2 MB. Exporta una tabla de evaluaciones más pequeña.")); return; }

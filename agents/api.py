@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from .config import ROOT, configured
 from .data import now, evaluate_demo
-from .models import EvaluationRequest, AgentRequest, ReviewRequest, WorkflowCallback, TelemetryRequest, SimulationRequest, CSVImport
+from .models import EvaluationRequest, AgentRequest, AssistantQuery, ReviewRequest, WorkflowCallback, TelemetryRequest, SimulationRequest, CSVImport
 from .store import Store, Conflict
 from .sac import parse_sac_csv
 from .integrations import bpa_start, hana_import_zones, IntegrationUnavailable
@@ -131,6 +131,42 @@ def create_app(db_path=None):
     @app.get("/api/agent-runs")
     def runs(evaluation_id: str | None = None):
         return store.list_records("runs", evaluation_id)
+
+    @app.post("/api/assistant/query")
+    def assistant_query(body: AssistantQuery):
+        """Deterministic conversational facade ready to expose as a Joule Studio action."""
+        zone = get_zone(body.zone_id)
+        evaluation = zone.get("latest_evaluation")
+        if not evaluation:
+            return {"answer": f"{zone['name']} todavía no tiene una evaluación registrada.", "facts": [],
+                    "suggested_actions": ["Completar la evaluación de las tres dimensiones"],
+                    "mode": "local-rules", "joule_deployed": False}
+        values = evaluation.get("subindices", {})
+        labels = {"geological": "geológico", "environmental": "ambiental", "social": "social"}
+        available = [(key, value) for key, value in values.items() if isinstance(value, (int, float))]
+        dominant = max(available, key=lambda item: item[1]) if available else None
+        missing = evaluation.get("missing_fields", [])
+        facts = [
+            f"Riesgo global: {evaluation.get('global_risk') if evaluation.get('global_risk') is not None else 'sin calcular'}",
+            f"Clasificación: {evaluation.get('classification', 'sin clasificar')}",
+            f"Versión del modelo: {evaluation.get('model_version', 'no registrada')}",
+        ]
+        if dominant:
+            facts.append(f"Dimensión más alta: {labels.get(dominant[0], dominant[0])} ({dominant[1]}/100)")
+        question = body.question.casefold()
+        if missing or "falta" in question:
+            detail = ", ".join(missing) if missing else "ninguno registrado"
+            answer = f"En {zone['name']}, los campos faltantes son: {detail}. Un dato ausente requiere revisión y no se interpreta como riesgo cero."
+        elif "por qué" in question or "porque" in question or "factor" in question:
+            lead = f"La dimensión más alta es la {labels.get(dominant[0], dominant[0])}, con {dominant[1]}/100." if dominant else "No hay subíndices suficientes para identificar un factor dominante."
+            answer = f"{zone['name']} tiene riesgo global {evaluation.get('global_risk') if evaluation.get('global_risk') is not None else 'sin calcular'} y clasificación {evaluation.get('classification', 'sin clasificar')}. {lead} Consulta la evidencia de la evaluación antes de atribuir causas."
+        else:
+            dimensions = ", ".join(f"{labels.get(key, key)} {value}/100" for key, value in available)
+            answer = f"{zone['name']} ({zone.get('region') or 'región no registrada'}) presenta riesgo global {evaluation.get('global_risk') if evaluation.get('global_risk') is not None else 'sin calcular'}, clasificación {evaluation.get('classification', 'sin clasificar')}. Subíndices: {dimensions or 'sin datos'}."
+        return {"answer": answer, "facts": facts,
+                "suggested_actions": ["Ejecutar análisis multiagente", "Revisar evidencia", "Enviar a revisión humana"],
+                "evaluation_id": evaluation.get("id"), "mode": "local-rules", "joule_deployed": False,
+                "notice": "Asistente local compatible con una futura acción de Joule Studio; no es SAP Joule desplegado."}
 
     @app.get("/api/telemetry")
     def readings(zone_id: str | None = None):

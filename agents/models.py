@@ -28,6 +28,19 @@ class AgentRequest(Model):
     evaluation_id: str = Field(min_length=1, max_length=64)
 
 
+class AssistantQuery(Model):
+    zone_id: str = Field(min_length=1, max_length=64)
+    question: str = Field(min_length=3, max_length=500)
+
+    @field_validator("question")
+    @classmethod
+    def useful_question(cls, value):
+        value = value.strip()
+        if len(value) < 3:
+            raise ValueError("Escribe una pregunta concreta.")
+        return value
+
+
 class ReviewRequest(AgentRequest):
     reviewer: str = Field(min_length=2, max_length=100)
     decision: Literal["approved", "observed", "rejected"]

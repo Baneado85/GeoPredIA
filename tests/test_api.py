@@ -87,6 +87,17 @@ class APIContractTests(unittest.TestCase):
         self.assertEqual(len(self.client.get("/api/agent-runs", params={"evaluation_id": self.eid}).json()), 1)
         self.assertEqual(self.client.get("/api/evaluations/" + self.eid).json()["review_status"], "pending")
 
+    def test_assistant_is_traceable_and_not_claimed_as_joule(self):
+        response = self.client.post("/api/assistant/query", json={"zone_id": "Z-001", "question": "¿Qué factor explica más el riesgo?"})
+        self.assertEqual(response.status_code, 200)
+        value = response.json()
+        self.assertEqual(value["evaluation_id"], self.eid)
+        self.assertFalse(value["joule_deployed"])
+        self.assertIn("dimensión más alta", value["answer"])
+
+    def test_assistant_rejects_unknown_zone(self):
+        self.assertEqual(self.client.post("/api/assistant/query", json={"zone_id": "NO-EXISTE", "question": "Resume el riesgo"}).status_code, 404)
+
     def review_body(self, eid=None):
         return {"evaluation_id": eid or self.eid, "reviewer": "Especialista Demo", "decision": "approved", "justification": "Revisión de demostración con evidencia sintética."}
 

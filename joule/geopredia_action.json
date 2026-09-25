@@ -1,0 +1,20 @@
+{
+  "name": "consultar_riesgo_geopredia",
+  "description": "Consulta una evaluación versionada de riesgo geológico, ambiental y social por zona.",
+  "status": "integration-contract",
+  "http": {
+    "method": "POST",
+    "path": "/api/assistant/query",
+    "request": {
+      "zone_id": "string",
+      "question": "string"
+    }
+  },
+  "guardrails": [
+    "No modificar puntuaciones",
+    "No aprobar ni rechazar evaluaciones",
+    "Citar el identificador de evaluación",
+    "Declarar datos faltantes"
+  ],
+  "deployment_note": "Crear la acción equivalente en Joule Studio cuando NTT DATA habilite el servicio, autenticación y destination HTTPS. Este archivo no es un paquete desplegable de SAP Joule."
+}
