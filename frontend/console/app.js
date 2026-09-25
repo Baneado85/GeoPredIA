@@ -10,7 +10,7 @@ const SCENARIOS = {
   environmental: { label: "Mayor peso ambiental", weights: { geological: 0.25, environmental: 0.55, social: 0.2 } },
   social: { label: "Mayor peso social", weights: { geological: 0.25, environmental: 0.25, social: 0.5 } },
 };
-const VIEW_NAMES = { overview: "Panorama", agents: "Multiagentes", sentinel: "IoT Sentinel", reviews: "Revisión humana", assistant: "Asistente", data: "Datos e integración" };
+const VIEW_NAMES = { overview: "Panorama", agents: "Multiagentes", sentinel: "Monitoreo IoT", reviews: "Revisión humana", assistant: "Asistente", data: "Dataset HANA" };
 const state = { zones: [], selectedId: null, status: null, offline: true, reviews: [], runs: [], telemetry: [], selectedRunId: null, selectionSequence: 0, loadSequence: 0, selectionLoading: false, scenarioKey: "base", busy: new Set() };
 const numberFormat = new Intl.NumberFormat("es-PE", { maximumFractionDigits: 1 });
 const dateFormat = new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -262,6 +262,7 @@ function renderReviews() {
 }
 
 function renderIntegrations() {
+  if (!$("integration-grid")) return;
   const specs = [["SAP HANA Cloud", "hana", "Lectura del catálogo de zonas autorizado"], ["SAP Analytics Cloud", "sac", "Cálculo oficial y exportación de valores"], ["SAP Build Process Automation", "bpa", "Flujo de revisión del equipo"], ["Modelo de lenguaje", "llm", "Explicaciones opcionales de agentes"]];
   $("integration-grid").replaceChildren(...specs.map(([name, key, description]) => {
     const configured = state.status?.integrations?.[key]?.configured === true;
@@ -282,7 +283,7 @@ function updateButtons() {
   ];
   specs.forEach(([id, disabled, key, loading, label]) => { const button = $(id); if (!button) return; button.disabled = disabled; button.textContent = state.busy.has(key) ? loading : label; button.title = actionTitle(); });
   ["reviewer", "decision", "justification"].forEach((id) => { $(id).disabled = readonly || state.busy.has("review"); });
-  $("csv-file").disabled = readonly || state.busy.has("import");
+  if ($("csv-file")) $("csv-file").disabled = readonly || state.busy.has("import");
   if ($("scenario-select")) $("scenario-select").disabled = readonly || ev?.source === "sac" || state.status?.mode !== "demo" || state.busy.has("evaluate");
 }
 
@@ -338,12 +339,12 @@ $("assistant-form").addEventListener("submit", (event) => {
   });
 });
 document.querySelectorAll("[data-prompt]").forEach((button) => button.addEventListener("click", () => { $("assistant-question").value = button.dataset.prompt; $("assistant-question").focus(); }));
-$("import-form").addEventListener("submit", (event) => {
+$("import-form")?.addEventListener("submit", (event) => {
   event.preventDefault(); const file = $("csv-file").files?.[0]; if (!file) return;
   if (file.size > 2 * 1024 * 1024) { setError(new Error("El archivo supera 2 MB. Exporta una tabla de evaluaciones más pequeña.")); return; }
   mutate("import", async () => { const csv = await file.text(); const result = await api("sac/import", { method: "POST", body: JSON.stringify({ csv }) }); await refreshDataAfterWrite(); $("import-result").textContent = `${result.imported} evaluaciones importadas. Se conservaron los valores y versiones del archivo SAC.`; setNotice("Importación validada y registrada. Consulta la evaluación de cada zona.", true); $("csv-file").value = ""; });
 });
-$("audit-button").addEventListener("click", () => mutate("audit", async () => {
+$("audit-button")?.addEventListener("click", () => mutate("audit", async () => {
   const events = asArray(await api("audit"));
   $("audit-list").className = "";
   $("audit-list").replaceChildren(...(events.length ? events.slice().reverse().slice(0, 50).map((item) => {
