@@ -1,0 +1,12 @@
+{
+  "name": "geopredia-hdi",
+  "private": true,
+  "scripts": {
+    "deploy": "node node_modules/@sap/hdi-deploy/deploy.js",
+    "load:csv": "python load_georisk_csv.py"
+  },
+  "dependencies": {
+    "@sap/hana-client": "^2.30.27",
+    "@sap/hdi-deploy": "^5.1.0"
+  }
+}

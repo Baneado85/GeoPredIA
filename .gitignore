@@ -20,6 +20,7 @@ credentials.json
 *.pfx
 .pio/
 *.log
+data/georisk_evaluations.csv
 .DS_Store
 Thumbs.db
 coverage/
