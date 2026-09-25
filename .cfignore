@@ -1,0 +1,16 @@
+.git/
+.github/
+.local/
+.venv/
+__pycache__/
+*.pyc
+*.db
+.env
+data/
+tests/
+iot/
+docs/
+analytics/
+workflows/
+database/
+backend/
