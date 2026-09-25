@@ -13,5 +13,6 @@ applications:
       SEED_DEMO: "true"
       GEOPREDIA_ALLOWED_HOSTS: "*.cfapps.us10.hana.ondemand.com,*.cfapps.us10-001.hana.ondemand.com"
       LLM_ENABLED: "false"
+      ALLOW_PUBLIC_DEMO: "true"
     services:
       - geopredia-hdi

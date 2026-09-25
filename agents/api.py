@@ -43,7 +43,8 @@ def create_app(db_path=None):
             if not device_route:
                 key = os.getenv("APP_API_KEY", "")
                 local = request.client and request.client.host in ("127.0.0.1", "::1", "testclient")
-                if (key and not hmac.compare_digest(request.headers.get("x-api-key", ""), key)) or (not key and not local):
+                public_demo = os.getenv("ALLOW_PUBLIC_DEMO", "false").lower() == "true"
+                if (key and not hmac.compare_digest(request.headers.get("x-api-key", ""), key)) or (not key and not local and not public_demo):
                     return JSONResponse({"detail": "Acceso local únicamente. Configura APP_API_KEY para un cliente remoto."}, status_code=401)
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
