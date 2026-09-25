@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoPredIA Console | Powered by SAP BTP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0a0e17;
+            --panel-bg: rgba(21, 28, 44, 0.7);
+            --border-color: rgba(0, 242, 254, 0.15);
+            --accent-cyan: #00f2fe;
+            --accent-blue: #4facfe;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --risk-high: #ef4444;
+            --risk-med: #f59e0b;
+            --risk-low: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #111827, var(--bg-dark));
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: rgba(10, 14, 23, 0.95);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+        }
+
+        .brand {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            padding: 1rem 1.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(0, 242, 254, 0.1);
+            color: var(--accent-cyan);
+            border-left: 4px solid var(--accent-cyan);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 2rem 3rem;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .tech-badges {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .badge {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Grid Layout */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 242, 254, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            font-family: 'Outfit', sans-serif;
+            color: var(--accent-cyan);
+        }
+
+        /* Span columns */
+        .col-4 { grid-column: span 4; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-12 { grid-column: span 12; }
+
+        /* KPIs */
+        .kpi-value {
+            font-size: 2.5rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            margin: 0.5rem 0;
+        }
+
+        .text-high { color: var(--risk-high); }
+        .text-med { color: var(--risk-med); }
+        .text-low { color: var(--risk-low); }
+
+        /* Progress bars */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s ease-in-out;
+        }
+
+        /* AI Chat / Synthesis */
+        .ai-message {
+            background: rgba(0, 242, 254, 0.05);
+            border-left: 3px solid var(--accent-blue);
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        th {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .status-pill {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-pending { background: rgba(245, 158, 11, 0.2); color: var(--risk-med); }
+        .status-approved { background: rgba(16, 185, 129, 0.2); color: var(--risk-low); }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .live-indicator {
+            width: 8px;
+            height: 8px;
+            background: var(--risk-high);
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="brand">
+            <i class="fa-solid fa-earth-americas"></i> GeoPredIA
+        </div>
+        <div class="nav-item active"><i class="fa-solid fa-chart-pie"></i> Executive Hub</div>
+        <div class="nav-item"><i class="fa-solid fa-satellite-dish"></i> IoT Sentinel (HANA)</div>
+        <div class="nav-item"><i class="fa-solid fa-chart-line"></i> SAC Models</div>
+        <div class="nav-item"><i class="fa-solid fa-list-check"></i> BPA Workflows</div>
+        <div class="nav-item"><i class="fa-solid fa-robot"></i> AI Agents</div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <div>
+                <h1>Decision Hub Console</h1>
+                <p style="color: var(--text-muted);">Monitoreo y Simulación de Escenarios Mineros</p>
+            </div>
+            <div class="tech-badges">
+                <div class="badge"><i class="fa-solid fa-database" style="color: #008FD3;"></i> SAP HANA Cloud</div>
+                <div class="badge"><i class="fa-solid fa-chart-bar" style="color: #F0AB00;"></i> SAP Analytics Cloud</div>
+                <div class="badge"><i class="fa-solid fa-code-branch" style="color: #E24838;"></i> SAP BPA</div>
+            </div>
+        </header>
+
+        <div class="grid-container">
+            <!-- SAP Analytics Cloud - Risk Score -->
+            <div class="card col-4">
+                <div class="card-header">
+                    <span><i class="fa-solid fa-chart-pie"></i> Índice de Riesgo Global (SAC)</span>
+                    <i class="fa-solid fa-ellipsis"></i>
+                </div>
+                <p style="color: var(--text-muted);">Zona: PERU-ANCA-04 | Escenario: BASE</p>
+                <div class="kpi-value text-med">41.25<span style="font-size: 1rem; color: var(--text-muted);"> /100</span></div>
+                
+                <div style="margin-top: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                        <span>Geológico</span><span>20.00 (40%)</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: 20%; background: var(--risk-low);"></div></div>
+                    
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-top: 1rem;">
+                        <span>Ambiental</span><span>60.00 (35%)</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: 60%; background: var(--risk-high);"></div></div>
+
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-top: 1rem;">
+                        <span>Social</span><span>25.00 (25%)</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: 25%; background: var(--risk-low);"></div></div>
+                </div>
+            </div>
+
+            <!-- SAC Chart Simulation -->
+            <div class="card col-8">
+                <div class="card-header">
+                    <span><i class="fa-solid fa-chart-line"></i> Simulación de Sensibilidad SAC (Comparativa de Zonas)</span>
+                </div>
+                <canvas id="sacChart" height="100"></canvas>
+            </div>
+
+            <!-- IoT Sentinel (HANA Ingest) -->
+            <div class="card col-6">
+                <div class="card-header">
+                    <span><i class="fa-solid fa-satellite-dish"></i> Telemetría IoT Sentinel (HANA Cloud)</span>
+                    <span class="live-indicator"></span>
+                </div>
+                <div style="display: flex; gap: 2rem; margin-top: 1rem;">
+                    <div>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Sonda SEN0193 (Suelo)</p>
+                        <div class="kpi-value text-low">42.5<span style="font-size: 1rem;"> %</span></div>
+                    </div>
+                    <div>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Turbidez TS300B (Agua)</p>
+                        <div class="kpi-value text-high">215.0<span style="font-size: 1rem;"> NTU</span></div>
+                    </div>
+                    <div>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Polvo PM2.5 (Aire)</p>
+                        <div class="kpi-value text-low">18.2<span style="font-size: 1rem;"> µg</span></div>
+                    </div>
+                </div>
+                <p style="margin-top: 1.5rem; font-size: 0.85rem; color: var(--risk-high);"><i class="fa-solid fa-triangle-exclamation"></i> <strong>Alerta:</strong> Turbidez anómala detectada en escorrentía sector Norte. Notificando a SAP BPA.</p>
+            </div>
+
+            <!-- Multi-Agent AI Synthesis -->
+            <div class="card col-6">
+                <div class="card-header">
+                    <span><i class="fa-solid fa-robot"></i> GeoPredIA AI - Síntesis de Agentes</span>
+                </div>
+                <div class="ai-message">
+                    <strong><i class="fa-solid fa-microchip"></i> Agente Coordinador:</strong><br>
+                    He evaluado los datos provenientes de SAC y HANA. El riesgo global (41.25) es moderado, pero el <strong>Agente Ambiental</strong> detecta un riesgo severo (60.00) impulsado por las alertas recientes del IoT de turbidez.<br><br>
+                    <strong>Recomendación para SAP BPA:</strong> Emitir estado de "Observación" y requerir instalación de piscinas de decantación previo a perforación.
+                </div>
+            </div>
+
+            <!-- SAP BPA Workflows -->
+            <div class="card col-12">
+                <div class="card-header">
+                    <span><i class="fa-solid fa-list-check"></i> SAP Build Process Automation - Workflows de Revisión</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID Evaluación</th>
+                            <th>Zona</th>
+                            <th>Riesgo SAC</th>
+                            <th>Fecha</th>
+                            <th>Estado BPA</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>EVAL-9021A</td>
+                            <td>PERU-ANCA-04</td>
+                            <td>41.25</td>
+                            <td>15 Sep 2026</td>
+                            <td><span class="status-pill status-pending">En Revisión Técnica</span></td>
+                            <td><button style="background:transparent; border:1px solid var(--accent-cyan); color:var(--accent-cyan); padding: 0.25rem 1rem; border-radius: 4px; cursor: pointer;">Ver Formulario</button></td>
+                        </tr>
+                        <tr>
+                            <td>EVAL-8842B</td>
+                            <td>CHIL-COQ-11</td>
+                            <td>28.50</td>
+                            <td>14 Sep 2026</td>
+                            <td><span class="status-pill status-approved">Aprobado</span></td>
+                            <td><button style="background:transparent; border:1px solid var(--text-muted); color:var(--text-muted); padding: 0.25rem 1rem; border-radius: 4px; cursor: pointer;">Ver Historial</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Configuración de Chart.js para simular SAP Analytics Cloud
+        const ctx = document.getElementById('sacChart').getContext('2d');
+        
+        // Gradiente
+        let gradientBase = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientBase.addColorStop(0, 'rgba(0, 242, 254, 0.5)');
+        gradientBase.addColorStop(1, 'rgba(0, 242, 254, 0.0)');
+
+        let gradientEnv = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientEnv.addColorStop(0, 'rgba(239, 68, 68, 0.5)');
+        gradientEnv.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Zona ANCA-04', 'Zona COQ-11', 'Zona ANTO-02', 'Zona CAJA-08'],
+                datasets: [
+                    {
+                        label: 'Escenario Base (Riesgo Global)',
+                        data: [41.25, 28.50, 55.20, 32.10],
+                        backgroundColor: gradientBase,
+                        borderColor: '#00f2fe',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Simulación Alta Prioridad Ambiental',
+                        data: [48.50, 25.10, 62.00, 39.40],
+                        backgroundColor: gradientEnv,
+                        borderColor: '#ef4444',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: { color: '#94a3b8', font: { family: 'Inter' } }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
