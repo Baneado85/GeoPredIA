@@ -1,0 +1,84 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "GeoPredIA Assistant API",
+    "version": "1.0.0",
+    "description": "Consulta evaluaciones de riesgo geologico, ambiental y social por zona."
+  },
+  "servers": [
+    {
+      "url": "https://geopredia-ac374882u14.cfapps.us10-001.hana.ondemand.com"
+    }
+  ],
+  "paths": {
+    "/api/assistant/query": {
+      "post": {
+        "operationId": "consultarRiesgoGeoPredIA",
+        "summary": "Consultar riesgo GeoPredIA",
+        "description": "Obtiene una respuesta explicable sobre el riesgo de una zona.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskQuestion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Evaluacion encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskAnswer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Zona no encontrada"
+          },
+          "422": {
+            "description": "Solicitud invalida"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RiskQuestion": {
+        "type": "object",
+        "required": ["zone_id", "question"],
+        "properties": {
+          "zone_id": {
+            "type": "string",
+            "example": "Z-001",
+            "description": "Identificador de la zona."
+          },
+          "question": {
+            "type": "string",
+            "example": "Cual es el riesgo de esta zona y por que?",
+            "description": "Pregunta en lenguaje natural."
+          }
+        }
+      },
+      "RiskAnswer": {
+        "type": "object",
+        "properties": {
+          "zone_id": { "type": "string" },
+          "answer": { "type": "string" },
+          "risk_score": { "type": "number", "format": "double" },
+          "risk_level": { "type": "string" },
+          "model_version": { "type": "string" },
+          "evidence": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
