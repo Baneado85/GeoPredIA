@@ -1,6 +1,6 @@
 # Especificación GeoPredIA para SAP Analytics Cloud
 
-Estado: diseño para configurar en el tenant del hackathon. Este Markdown no es un paquete de modelo SAC importable. El repositorio funciona con datos sintéticos para desarrollar la experiencia; la evaluación oficial debe ejecutarse en SAC sobre el dataset común alojado en HANA Cloud.
+Estado: diseño para configurar en el tenant del hackathon. Este Markdown no es un paquete de modelo SAC importable. El CSV oficial fue recuperado del entorno SAP y se usa con la alternativa CAP + SQLite autorizada por los organizadores; el mismo archivo debe importarse en SAC. La conexión directa a HANA queda pendiente mientras continúe la restricción de infraestructura.
 
 ## 1. Contrato antes del dashboard
 
