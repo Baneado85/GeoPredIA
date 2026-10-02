@@ -17,3 +17,14 @@ jobs:
       - run: python -m unittest discover -s tests -v
       - run: python -m unittest discover -s iot/simulator -p 'test_*.py' -v
       - run: node --check frontend/console/app.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: npm test
+        working-directory: backend
+      - run: npx --no-install cds compile '*'
+        working-directory: backend
