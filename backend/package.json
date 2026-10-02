@@ -1,13 +1,30 @@
 {
   "name": "geopredia-cap-backend",
   "version": "1.0.0",
-  "description": "Servicio de Integracion SAP CAP para GeoPredIA",
-  "main": "server.js",
+  "private": true,
+  "description": "GeoPredIA data service implemented with SAP Cloud Application Programming Model",
   "scripts": {
-    "start": "node srv/server.js"
+    "start": "cds-serve",
+    "watch": "cds watch",
+    "deploy:sqlite": "cds deploy --to sqlite:geopredia.db",
+    "prepare:data": "python scripts/prepare_data.py",
+    "test": "node test/model.test.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "cors": "^2.8.5"
-  }
+    "@cap-js/sqlite": "^3.1.1",
+    "@sap/cds": "^10.1.1",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@sap/cds-dk": "^10.1.1"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": { "url": "geopredia.db" }
+      }
+    }
+  },
+  "engines": { "node": ">=20" }
 }

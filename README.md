@@ -13,7 +13,7 @@ Proyecto para el reto **GeoRisk — HKT-2026-T2, ULatinHack 2026**. Ayuda a comp
 - Recepción autenticada de telemetría, simulador y firmware del kit ESP32 de aproximadamente **S/88.30**.
 - Adaptadores para leer una vista de SAP HANA, publicar registros en un esquema del equipo y enviar evaluaciones a SAP Build Process Automation.
 
-**Estado real:** la aplicación local es funcional. Las seis zonas iniciales son ficticias y no son el dataset común del concurso. SAP HANA, SAC, BPA y Work Zone requieren configuración y verificación en el tenant del evento. Tener un adaptador no equivale a haber desplegado esos servicios. El firmware necesita compilación y prueba en la placa física.
+**Estado real:** la aplicación FastAPI desplegada y su frontend son funcionales. El dataset oficial de 11,458 filas fue recuperado del entorno SAP y `backend/` ahora contiene una aplicación CAP real con SQLite, siguiendo la alternativa autorizada por los organizadores durante las restricciones de infraestructura. SAC, BPA, Work Zone y Joule todavía requieren terminar su configuración y verificar cada conexión en sus respectivos tenants. El firmware necesita compilación y prueba en la placa física.
 
 ## Inicio rápido — Windows
 
@@ -56,7 +56,7 @@ flowchart LR
     WZ --> BPA
 ```
 
-La API local usa **FastAPI + SQLite** para poder ensayar sin infraestructura adicional. `POST /api/integrations/hana/publish` replica los registros pendientes en `GPI_EVENT_STORE` del esquema del equipo, de forma explícita e idempotente; no escribe en el dataset común. El scoring oficial debe implementarse **dentro de SAC**. Las tablas del equipo en HANA y el flujo BPA se configuran según [la guía SAP](docs/SAP_GUIDE.md); el prototipo local no los sustituye en la entrega del concurso.
+La aplicación pública usa **FastAPI + SQLite** para la experiencia multiagente. `backend/` es el servicio **SAP CAP + SQLite** que expone el dataset oficial mediante OData y que podrá migrarse a HANA cuando el tenant lo permita. El scoring oficial debe implementarse **dentro de SAC**. `POST /api/integrations/hana/publish` es un adaptador opcional para una futura instancia HANA; no demuestra que HANA esté activo.
 
 ## Cómo se evalúa el riesgo
 
@@ -114,7 +114,7 @@ tests/                  Pruebas de API, agentes y reglas de integridad
 scripts/                Inicio local y utilidades de entrega
 ```
 
-Los directorios iniciales `backend/` y `frontend/webapp/` del repositorio pueden mantenerse como antecedentes. La entrada verificada de esta versión es **`agents.api:app` + `frontend/console/`**. Un nombre de carpeta CAP o un archivo CDS por sí solos no constituyen un despliegue SAP CAP.
+La entrada pública actual es **`agents.api:app` + `frontend/console/`**. El servicio CAP se ejecuta de forma separada desde `backend/`; su contrato se valida antes de desplegarlo. La aplicación indica expresamente si usa SQLite o una conexión SAP verificada.
 
 ## Validación
 

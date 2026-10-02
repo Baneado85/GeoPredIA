@@ -1,0 +1,16 @@
+applications:
+  - name: geopredia-cap-ac374882u14
+    path: backend
+    memory: 384M
+    disk_quota: 1G
+    instances: 1
+    buildpacks:
+      - nodejs_buildpack
+    command: npm start
+    health-check-type: http
+    health-check-http-endpoint: /odata/v4/geopredia/health()
+    timeout: 180
+    env:
+      NODE_ENV: production
+      CDS_CONFIG: '{"features":{"in_memory_db":false}}'
+

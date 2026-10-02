@@ -1,7 +1,20 @@
-# Servicio de integración
+# Servicio GeoPredIA en SAP CAP
 
-La versión funcional de esta entrega se inicia con `python -m uvicorn agents.api:app` desde la raíz. La API sirve el frontend y conserva datos localmente para el ensayo.
+Esta carpeta es una aplicación SAP CAP real. Usa SQLite porque esa fue la alternativa autorizada por los organizadores durante las restricciones de HANA Cloud.
 
-Los archivos iniciales de esta carpeta pueden conservarse como base para una futura variante SAP CAP. El adaptador real a HANA/BPA de esta versión está en `agents/integrations.py`. Express no es SAP CAP: para usar CAP se necesita implementar y desplegar su runtime, modelo y autenticación en el tenant.
+```bash
+npm run prepare:data
+npm install
+npm run deploy:sqlite
+npm start
+```
 
-Consulta `docs/SAP_GUIDE.md` antes de configurar el entorno del concurso.
+Endpoints principales:
+
+- `GET /odata/v4/geopredia/health()`
+- `GET /odata/v4/geopredia/OfficialEvaluations?$top=10`
+- `GET /odata/v4/geopredia/RiskScores`
+- `POST /odata/v4/geopredia/IoTReadings`
+- `POST /odata/v4/geopredia/submitForReview`
+
+`submitForReview` guarda una solicitud trazable. Solo marca `READY_FOR_BPA` cuando existen variables de conexión BPA; no inventa un ID de proceso ni afirma que HANA recibió datos.
