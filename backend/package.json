@@ -5,6 +5,7 @@
   "description": "GeoPredIA data service implemented with SAP Cloud Application Programming Model",
   "scripts": {
     "start": "cds-serve",
+    "start:cf": "cds deploy --to sqlite:geopredia.db && cds-serve",
     "watch": "cds watch",
     "deploy:sqlite": "cds deploy --to sqlite:geopredia.db",
     "prepare:data": "python scripts/prepare_data.py",
