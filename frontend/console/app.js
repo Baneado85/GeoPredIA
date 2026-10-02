@@ -10,7 +10,7 @@ const SCENARIOS = {
   environmental: { label: "Mayor peso ambiental", weights: { geological: 0.25, environmental: 0.55, social: 0.2 } },
   social: { label: "Mayor peso social", weights: { geological: 0.25, environmental: 0.25, social: 0.5 } },
 };
-const VIEW_NAMES = { overview: "Panorama", agents: "Multiagentes", sentinel: "Monitoreo IoT", reviews: "Revisión humana", assistant: "Asistente", data: "Dataset HANA" };
+const VIEW_NAMES = { overview: "Panorama", agents: "Multiagentes", sentinel: "Monitoreo IoT", reviews: "Revisión humana", assistant: "Asistente", analytics: "Analítica de riesgo" };
 const state = { zones: [], selectedId: null, status: null, offline: true, reviews: [], runs: [], telemetry: [], selectedRunId: null, selectionSequence: 0, loadSequence: 0, selectionLoading: false, scenarioKey: "base", busy: new Set() };
 const numberFormat = new Intl.NumberFormat("es-PE", { maximumFractionDigits: 1 });
 const dateFormat = new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -135,7 +135,7 @@ function selectZone(id) {
   state.selectedId = id; setError(null); renderTable(); renderSelects(); renderDetail(); renderReviews(); updateButtons(); loadSelected();
 }
 
-function renderAll() { renderConnection(); renderKpis(); renderTable(); renderSelects(); renderDetail(); renderAgents(); renderTelemetry(); renderReviews(); renderIntegrations(); updateButtons(); }
+function renderAll() { renderConnection(); renderKpis(); renderTable(); renderSelects(); renderDetail(); renderAgents(); renderTelemetry(); renderReviews(); renderAnalytics(); renderIntegrations(); updateButtons(); }
 function renderSelected() { renderAgents(); renderTelemetry(); updateButtons(); }
 
 function renderConnection() {
@@ -267,6 +267,38 @@ function renderIntegrations() {
   $("integration-grid").replaceChildren(...specs.map(([name, key, description]) => {
     const configured = state.status?.integrations?.[key]?.configured === true;
     return add(node("article", "integration-card"), node("h3", "", name), node("span", "muted-pill", configured ? "Configuración presente" : "Sin configurar"), node("p", "", description), configured ? node("p", "small", "Configuración detectada; no confirma conexión al servicio.") : null);
+  }));
+}
+
+function renderAnalytics() {
+  const evaluations = state.zones.map((zone) => ({ zone, ev: zone.latest_evaluation })).filter(({ ev }) => ev && finite(ev.global_risk));
+  const ranking = [...evaluations].sort((a, b) => b.ev.global_risk - a.ev.global_risk).slice(0, 8);
+  const rankingRoot = $("risk-ranking-chart");
+  if (rankingRoot) rankingRoot.replaceChildren(...(ranking.length ? ranking.map(({ zone, ev }, index) => {
+    const value = Math.max(0, Math.min(100, ev.global_risk));
+    const fill = node("span", `ranking-fill rank-${classification(ev).toLowerCase()}`); fill.style.width = `${value}%`;
+    return add(node("div", "ranking-row"), node("span", "ranking-position", String(index + 1).padStart(2, "0")), add(node("div", "ranking-copy"), node("strong", "", zone.name), node("small", "", zone.region || zone.id)), add(node("div", "ranking-track"), fill), node("b", "", score(ev.global_risk)));
+  }) : [empty("Aún no hay evaluaciones con scoring para comparar.")]));
+
+  const counts = { Bajo: 0, Medio: 0, Alto: 0, "Sin datos": 0 };
+  state.zones.forEach((zone) => { const key = classification(zone.latest_evaluation); counts[key] = (counts[key] || 0) + 1; });
+  const total = Math.max(state.zones.length, 1);
+  const low = counts.Bajo / total * 100; const medium = counts.Medio / total * 100; const high = counts.Alto / total * 100;
+  const donut = node("div", "risk-donut"); donut.style.background = `conic-gradient(#6f9270 0 ${low}%, #d6a653 ${low}% ${low + medium}%, #c96f4a ${low + medium}% ${low + medium + high}%, #d8ddd2 ${low + medium + high}% 100%)`;
+  add(donut, add(node("span", ""), node("strong", "", state.zones.length), node("small", "", "zonas")));
+  const distributionRoot = $("risk-distribution-chart");
+  if (distributionRoot) distributionRoot.replaceChildren(donut, add(node("div", "distribution-legend"), ...Object.entries(counts).map(([label, value]) => add(node("div", ""), node("i", `legend-${label.toLowerCase().replace(" ", "-")}`), node("span", "", label), node("strong", "", value)))));
+
+  const dimensions = [
+    ["Geológico", evaluations.map(({ ev }) => ev.subindices?.geological).filter(finite)],
+    ["Ambiental", evaluations.map(({ ev }) => ev.subindices?.environmental).filter(finite)],
+    ["Social", evaluations.map(({ ev }) => ev.subindices?.social).filter(finite)],
+  ];
+  const dimensionRoot = $("dimension-chart");
+  if (dimensionRoot) dimensionRoot.replaceChildren(...dimensions.map(([label, values], index) => {
+    const mean = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+    const bar = node("span", `dimension-column-fill dimension-color-${index + 1}`); bar.style.height = `${Math.max(3, Math.min(100, mean))}%`;
+    return add(node("div", "dimension-column"), add(node("div", "dimension-column-track"), bar, node("strong", "", score(mean))), node("span", "", label));
   }));
 }
 
