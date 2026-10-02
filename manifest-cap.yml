@@ -6,9 +6,8 @@ applications:
     instances: 1
     buildpacks:
       - nodejs_buildpack
-    command: npm run start:cf
-    health-check-type: http
-    health-check-http-endpoint: /odata/v4/geopredia/health()
+    command: node node_modules/@sap/cds/bin/serve.js
+    health-check-type: process
     timeout: 180
     env:
       NODE_ENV: production
