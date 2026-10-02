@@ -1,7 +1,7 @@
 applications:
   - name: geopredia-cap-ac374882u14
     path: backend
-    memory: 384M
+    memory: 768M
     disk_quota: 1G
     instances: 1
     buildpacks:
