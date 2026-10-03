@@ -11,7 +11,7 @@ class Conflict(Exception):
 
 
 class Store:
-    def __init__(self, path, seed_demo=True):
+    def __init__(self, path, seed_demo=True, official_dataset=None):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connection() as db:
@@ -25,7 +25,17 @@ class Store:
                 CREATE TABLE IF NOT EXISTS hana_exports (event_id TEXT PRIMARY KEY, exported_at TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS audit (seq INTEGER PRIMARY KEY AUTOINCREMENT, created_at TEXT NOT NULL, action TEXT NOT NULL, resource_id TEXT NOT NULL, detail TEXT NOT NULL);
             """)
-            if seed_demo and not db.execute("SELECT COUNT(*) FROM zones").fetchone()[0]:
+            if official_dataset:
+                from .official_dataset import load_official_dataset
+                loaded = load_official_dataset(official_dataset)
+                current = db.execute("SELECT COUNT(*) FROM zones WHERE json_extract(body, '$.source')='organizer-csv-local'").fetchone()[0]
+                if current != len(loaded):
+                    db.execute("DELETE FROM evaluations")
+                    db.execute("DELETE FROM zones")
+                    for zone, evaluation in loaded:
+                        db.execute("INSERT INTO zones VALUES (?, ?)", (zone["id"], json.dumps(zone)))
+                        db.execute("INSERT INTO evaluations (id,zone_id,body) VALUES (?,?,?)", (evaluation["id"], zone["id"], json.dumps(evaluation)))
+            elif seed_demo and not db.execute("SELECT COUNT(*) FROM zones").fetchone()[0]:
                 for zone in seed_zones():
                     db.execute("INSERT INTO zones VALUES (?, ?)", (zone["id"], json.dumps(zone)))
                     evaluation = evaluate_demo(zone)

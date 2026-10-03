@@ -46,3 +46,5 @@
 .assistant-console:not(.is-answered) .assistant-orb-wrap{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .assistant-console:not(.is-thinking):not(.is-answered) .assistant-orb-wrap{top:40%}
 .assistant-console.is-thinking .assistant-orb-wrap canvas{filter:drop-shadow(0 0 30px #7de39c88)}
+.assistant-console .composer-row:before,.assistant-console .composer-spark{pointer-events:none}
+.assistant-console .composer-row textarea{position:relative;z-index:3;pointer-events:auto;user-select:text;color:#dcebe2}

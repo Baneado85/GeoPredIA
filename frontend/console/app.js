@@ -152,7 +152,7 @@ function renderKpis() {
   const pending = evaluations.filter((ev) => ev.review_status === "pending").length;
   const complete = evaluations.filter((ev) => finite(ev.global_risk) && !asArray(ev.missing_fields).length).length;
   const specs = [
-    ["Zonas de exploración", state.zones.length, "Portafolio registrado", "grid"],
+    ["Zonas de exploración", state.zones.length, `${state.zones.reduce((sum, zone) => sum + (zone.record_count || 0), 0).toLocaleString("es-PE")} registros del dataset`, "grid"],
     ["Riesgo global medio", score(mean), `De ${values.length} evaluaciones con datos`, "wave", "/100"],
     ["Pendientes de revisión", pending, "Requieren criterio humano", "check"],
     ["Evaluaciones completas", complete, `${evaluations.length - complete} con datos insuficientes`, "data"],

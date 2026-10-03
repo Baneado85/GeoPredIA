@@ -10,6 +10,7 @@ applications:
     timeout: 180
     env:
       SEED_DEMO: "true"
+      SEED_OFFICIAL_DATASET: "true"
       GEOPREDIA_ALLOWED_HOSTS: "*.cfapps.us10.hana.ondemand.com,*.cfapps.us10-001.hana.ondemand.com"
       LLM_ENABLED: "false"
       ALLOW_PUBLIC_DEMO: "true"

@@ -21,7 +21,8 @@ from .integrations import bpa_start, hana_import_zones, IntegrationUnavailable
 def create_app(db_path=None):
     app = FastAPI(title="GeoPredIA · GeoRisk Decision Hub", version="0.2.0",
                   description="Prototipo local con agentes, snapshots SAC y revisión humana. Datos iniciales sintéticos.")
-    store = Store(db_path or os.getenv("GEOPREDIA_DB", str(ROOT / ".local" / "geopredia.db")), seed_demo=os.getenv("SEED_DEMO", "true").lower() == "true")
+    official_dataset = ROOT / "analytics" / "dataset_tema2_georisk.csv" if os.getenv("SEED_OFFICIAL_DATASET", "false").lower() == "true" else None
+    store = Store(db_path or os.getenv("GEOPREDIA_DB", str(ROOT / ".local" / "geopredia.db")), seed_demo=os.getenv("SEED_DEMO", "true").lower() == "true", official_dataset=official_dataset)
     app.state.store = store
     allowed_hosts = ["localhost", "127.0.0.1", "[::1]", "testserver"]
     allowed_hosts.extend(host.strip() for host in os.getenv("GEOPREDIA_ALLOWED_HOSTS", "").split(",") if host.strip())
@@ -82,7 +83,8 @@ def create_app(db_path=None):
     @app.get("/api/status")
     def status():
         llm = configured("GROQ_API_KEY") and os.getenv("LLM_ENABLED", "false").lower() == "true"
-        return {"mode": "demo" if os.getenv("SEED_DEMO", "true").lower() == "true" else "integration", "version": "0.2.0", "llm_mode": "llm" if llm else "rules",
+        mode = "dataset-local" if official_dataset else "demo" if os.getenv("SEED_DEMO", "true").lower() == "true" else "integration"
+        return {"mode": mode, "version": "0.2.0", "llm_mode": "llm" if llm else "rules",
                 "storage": "sqlite-local", "integrations": {
                     "hana": {"configured": configured("HANA_ADDRESS", "HANA_USER", "HANA_PASSWORD", "HANA_ZONE_VIEW"), "verified": False},
                     "sac": {"configured": False, "method": "manual-csv-import"},
