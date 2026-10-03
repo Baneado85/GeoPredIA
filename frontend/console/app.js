@@ -336,7 +336,7 @@ function updateButtons() {
   const ev = evaluation(); const readonly = state.offline; const hasZone = Boolean(currentZone());
   const specs = [
     ["run-agents-button", readonly || !ev || state.busy.has("agents"), "agents", "Ejecutando análisis…", "Ejecutar análisis"],
-    ["simulate-button", readonly || !hasZone || state.status?.mode !== "demo" || state.busy.has("simulate"), "simulate", "Generando lectura…", "Generar lectura simulada"],
+    ["simulate-button", readonly || !hasZone || !["demo", "dataset-local"].includes(state.status?.mode) || state.busy.has("simulate"), "simulate", "Generando lectura…", "Generar lectura simulada"],
     ["review-submit", readonly || !ev || ev.review_status !== "pending" || state.busy.has("review"), "review", "Guardando revisión…", ev && ev.review_status !== "pending" ? "Esta versión ya fue revisada" : "Guardar revisión"],
     ["import-submit", readonly || state.busy.has("import"), "import", "Validando importación…", "Validar e importar"],
     ["assistant-submit", readonly || !hasZone || state.busy.has("assistant"), "assistant", "Consultando…", "Consultar"],
@@ -441,6 +441,12 @@ function resetAssistant() {
 }
 $(`assistant-reset`)?.addEventListener("click", resetAssistant);
 document.querySelectorAll("[data-prompt]").forEach((button) => button.addEventListener("click", () => { $("assistant-question").value = button.dataset.prompt; $("assistant-question").focus(); }));
+$("assistant-question").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    $("assistant-form").requestSubmit();
+  }
+});
 $("import-form")?.addEventListener("submit", (event) => {
   event.preventDefault(); const file = $("csv-file").files?.[0]; if (!file) return;
   if (file.size > 2 * 1024 * 1024) { setError(new Error("El archivo supera 2 MB. Exporta una tabla de evaluaciones más pequeña.")); return; }
