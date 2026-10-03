@@ -336,7 +336,12 @@ function renderAnalytics() {
         const latlng = [Number(zone.latitude), Number(zone.longitude)];
         bounds.push(latlng);
         const label = classification(ev);
-        const marker = window.L.circleMarker(latlng, { radius: 8.5, color: "#ffffff", weight: 2.5, fillColor: colors[label] || "#7d8982", fillOpacity: .96, className: `risk-geo-marker risk-geo-${label.toLowerCase()}` });
+        const markerColor = colors[label] || "#7d8982";
+        const marker = window.L.marker(latlng, { icon: window.L.divIcon({
+          className: "risk-div-icon",
+          html: `<span class="risk-geo-marker" style="--marker-color:${markerColor}" aria-hidden="true"></span>`,
+          iconSize: [24, 24], iconAnchor: [12, 12], tooltipAnchor: [0, -12],
+        }) });
         marker.bindTooltip(`<strong>${String(zone.name || zone.id).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]))}</strong><br>${score(ev.global_risk)}/100 · ${label}<br><span>${String(zone.region || "Perú").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]))}</span>`, { direction: "top", offset: [0, -7], opacity: .96 });
         marker.on("click", () => { selectZone(zone.id); document.querySelector(".overview-grid")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
         marker.addTo(riskLeafletLayer);
