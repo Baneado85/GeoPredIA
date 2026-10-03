@@ -472,9 +472,12 @@ function startAssistantOrb() {
   }
   let rotation = 0;
   const draw = (time) => {
-    context.clearRect(0, 0, size, size); rotation += .004;
+    const isThinking = document.querySelector(".assistant-console")?.classList.contains("is-thinking");
+    const motionSpeed = isThinking ? .00135 : .003;
+    const pulseSpeed = isThinking ? 920 : 620;
+    context.clearRect(0, 0, size, size); rotation += motionSpeed;
     points.map((point) => { const x = point.x * Math.cos(rotation) + point.z * Math.sin(rotation); const z = -point.x * Math.sin(rotation) + point.z * Math.cos(rotation); return { x, y: point.y, z, seed: point.seed }; }).sort((a, b) => a.z - b.z).forEach((point) => {
-      const depth = (point.z + 1) / 2; const pulse = .55 + .45 * Math.sin(time / 520 + point.seed); const perspective = 2.7 / (2.7 - point.z);
+      const depth = (point.z + 1) / 2; const pulse = .55 + .45 * Math.sin(time / pulseSpeed + point.seed); const perspective = 2.7 / (2.7 - point.z);
       context.beginPath(); context.fillStyle = `rgba(${Math.round(120 + depth * 105)},${Math.round(195 + depth * 45)},${Math.round(145 + depth * 70)},${(.2 + depth * .68) * pulse})`;
       context.arc(center + point.x * radius * perspective, center - point.y * radius * perspective, .7 + depth * 1.15, 0, Math.PI * 2); context.fill();
     });

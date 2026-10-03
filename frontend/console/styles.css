@@ -41,3 +41,8 @@
 @media(max-width:980px){#view-overview>.risk-command{min-height:auto}#view-overview>.risk-command .risk-map-shell{min-height:460px}#view-overview>.hero .terrain-art{display:block}}
 @media(max-width:680px){#view-overview>.hero{padding:20px;min-height:150px}#view-overview>.hero h1{font-size:27px}#view-overview>.hero .terrain-art{display:none}#view-overview>.risk-command .risk-map-shell{min-height:390px}}
 @media(prefers-reduced-motion:reduce){.risk-map-point:after,.assistant-orb,.assistant-orb i{animation:none!important}}
+
+/* Keep Joule's orb present from the first frame; submitting only changes its tempo. */
+.assistant-console:not(.is-answered) .assistant-orb-wrap{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.assistant-console:not(.is-thinking):not(.is-answered) .assistant-orb-wrap{top:40%}
+.assistant-console.is-thinking .assistant-orb-wrap canvas{filter:drop-shadow(0 0 30px #7de39c88)}
