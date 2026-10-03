@@ -303,7 +303,14 @@ function renderAnalytics() {
 
   const mapRoot = $("risk-map");
   if (mapRoot) {
-    const points = evaluations.slice(0, 34).map(({ zone, ev }, index) => {
+    if ($("map-total-count")) $("map-total-count").textContent = `${evaluations.length} zonas evaluadas`;
+    const query = (mapView.query || "").toLowerCase();
+    const visible = evaluations.slice(0, 34).filter(({ zone, ev }) => {
+      const matchesLayer = mapView.layer === "all" || classification(ev) === mapView.layer;
+      const haystack = `${zone.name || ""} ${zone.region || ""} ${zone.id || ""}`.toLowerCase();
+      return matchesLayer && haystack.includes(query);
+    });
+    const points = visible.map(({ zone, ev }, index) => {
       const point = node("button", `risk-map-point map-${classification(ev).toLowerCase().replace(" ", "-")}`);
       point.type = "button";
       point.style.left = `${25 + ((index * 37) % 58)}%`;
@@ -315,6 +322,12 @@ function renderAnalytics() {
       return point;
     });
     mapRoot.replaceChildren(...points);
+    if ($("map-visible-count")) $("map-visible-count").textContent = `${visible.length} zonas visibles`;
+    document.querySelectorAll(".layer-toggle").forEach((button) => {
+      const active = button.dataset.layer === mapView.layer;
+      button.classList.toggle("active", active);
+      const marker = button.querySelector("b"); if (marker) marker.textContent = active ? "●" : "○";
+    });
   }
 }
 
@@ -354,6 +367,7 @@ async function mutate(key, work) {
     state.busy.delete(key); updateButtons();
     if (key === "assistant") {
       $("assistant-orb")?.classList.remove("thinking");
+      document.querySelector(".assistant-console")?.classList.remove("is-thinking");
       if ($("assistant-state")?.textContent === "Analizando evidencia…") $("assistant-state").textContent = "Listo para analizar";
     }
   }
@@ -394,18 +408,31 @@ $("assistant-form").addEventListener("submit", (event) => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
   const body = { zone_id: $("assistant-zone-select").value, question: $("assistant-question").value.trim() };
-  const orb = $("assistant-orb"); const assistantState = $("assistant-state");
+  const orb = $("assistant-orb"); const assistantState = $("assistant-state"); const consoleRoot = document.querySelector(".assistant-console");
+  consoleRoot?.classList.remove("is-answered"); consoleRoot?.classList.add("is-thinking");
   orb?.classList.add("thinking"); if (assistantState) assistantState.textContent = "Analizando evidencia…";
   mutate("assistant", async () => {
     const result = await api("assistant/query", { method: "POST", body: JSON.stringify(body) });
     const facts = add(node("ul", "assistant-facts"), ...asArray(result.facts).map((fact) => node("li", "", fact)));
     const actions = add(node("div", "assistant-actions"), ...asArray(result.suggested_actions).map((action) => node("span", "muted-pill", action)));
     $("assistant-answer").className = "assistant-answer";
-    $("assistant-answer").replaceChildren(node("p", "assistant-message", result.answer), facts, actions, node("small", "", result.notice));
+    const reset = node("button", "assistant-reset", "Nueva consulta"); reset.type = "button"; reset.id = "assistant-reset"; reset.addEventListener("click", resetAssistant);
+    $("assistant-answer").replaceChildren(node("p", "assistant-message", result.answer), facts, actions, node("small", "", result.notice), reset);
     orb?.classList.remove("thinking"); orb?.classList.add("resolved"); if (assistantState) assistantState.textContent = "Respuesta trazable lista";
+    consoleRoot?.classList.remove("is-thinking"); consoleRoot?.classList.add("is-answered");
     window.setTimeout(() => orb?.classList.remove("resolved"), 1800);
   });
 });
+function resetAssistant() {
+  const consoleRoot = document.querySelector(".assistant-console");
+  consoleRoot?.classList.remove("is-thinking", "is-answered");
+  $("assistant-question").value = "";
+  $("assistant-answer").className = "assistant-answer assistant-welcome";
+  $("assistant-answer").replaceChildren(node("p", "assistant-message", "Selecciona una zona y pregúntame qué riesgo domina, qué información falta o por qué debería revisarse."));
+  if ($("assistant-state")) $("assistant-state").textContent = "Listo para analizar";
+  $("assistant-question").focus();
+}
+$(`assistant-reset`)?.addEventListener("click", resetAssistant);
 document.querySelectorAll("[data-prompt]").forEach((button) => button.addEventListener("click", () => { $("assistant-question").value = button.dataset.prompt; $("assistant-question").focus(); }));
 $("import-form")?.addEventListener("submit", (event) => {
   event.preventDefault(); const file = $("csv-file").files?.[0]; if (!file) return;
@@ -423,6 +450,9 @@ $("audit-button")?.addEventListener("click", () => mutate("audit", async () => {
 
 document.querySelectorAll(".zone-select").forEach((select) => select.addEventListener("change", () => selectZone(select.value)));
 $("zone-search").addEventListener("input", renderTable); $("risk-filter").addEventListener("change", renderTable); $("refresh-button").addEventListener("click", loadAll);
+const mapView = { layer: "all", query: "" };
+$("map-search")?.addEventListener("input", (event) => { mapView.query = event.currentTarget.value.trim(); renderAnalytics(); });
+document.querySelectorAll(".layer-toggle").forEach((button) => button.addEventListener("click", () => { mapView.layer = button.dataset.layer || "all"; renderAnalytics(); }));
 
 function navigate() {
   const requested = location.hash.slice(1); const view = Object.hasOwn(VIEW_NAMES, requested) ? requested : "overview";
