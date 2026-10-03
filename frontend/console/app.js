@@ -10,7 +10,7 @@ const SCENARIOS = {
   environmental: { label: "Mayor peso ambiental", weights: { geological: 0.25, environmental: 0.55, social: 0.2 } },
   social: { label: "Mayor peso social", weights: { geological: 0.25, environmental: 0.25, social: 0.5 } },
 };
-const VIEW_NAMES = { overview: "Panorama", agents: "Multiagentes", sentinel: "Monitoreo IoT", reviews: "Revisión humana", assistant: "Asistente", analytics: "Analítica de riesgo" };
+const VIEW_NAMES = { overview: "Panorama y riesgo", agents: "Multiagentes", sentinel: "Monitoreo IoT", assistant: "Asistente Joule", reviews: "Revisión humana" };
 const state = { zones: [], selectedId: null, status: null, offline: true, reviews: [], runs: [], telemetry: [], selectedRunId: null, selectionSequence: 0, loadSequence: 0, selectionLoading: false, scenarioKey: "base", busy: new Set() };
 const numberFormat = new Intl.NumberFormat("es-PE", { maximumFractionDigits: 1 });
 const dateFormat = new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -300,6 +300,22 @@ function renderAnalytics() {
     const bar = node("span", `dimension-column-fill dimension-color-${index + 1}`); bar.style.height = `${Math.max(3, Math.min(100, mean))}%`;
     return add(node("div", "dimension-column"), add(node("div", "dimension-column-track"), bar, node("strong", "", score(mean))), node("span", "", label));
   }));
+
+  const mapRoot = $("risk-map");
+  if (mapRoot) {
+    const points = evaluations.slice(0, 34).map(({ zone, ev }, index) => {
+      const point = node("button", `risk-map-point map-${classification(ev).toLowerCase().replace(" ", "-")}`);
+      point.type = "button";
+      point.style.left = `${25 + ((index * 37) % 58)}%`;
+      point.style.top = `${8 + ((index * 53) % 82)}%`;
+      point.style.setProperty("--pulse-delay", `${(index % 7) * -0.45}s`);
+      point.title = `${zone.name}: ${score(ev.global_risk)}/100 · ${classification(ev)}`;
+      point.setAttribute("aria-label", point.title);
+      point.addEventListener("click", () => { selectZone(zone.id); location.hash = "overview"; document.querySelector(".overview-grid")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
+      return point;
+    });
+    mapRoot.replaceChildren(...points);
+  }
 }
 
 function updateButtons() {
@@ -313,7 +329,17 @@ function updateButtons() {
     ["audit-button", readonly || state.busy.has("audit"), "audit", "Consultando…", "Consultar bitácora"],
     ["evaluate-button", readonly || !hasZone || ev?.source === "sac" || state.status?.mode !== "demo" || state.busy.has("evaluate"), "evaluate", "Evaluando…", ev?.source === "sac" ? "Valores conservados del CSV" : "Evaluar escenario demo"],
   ];
-  specs.forEach(([id, disabled, key, loading, label]) => { const button = $(id); if (!button) return; button.disabled = disabled; button.textContent = state.busy.has(key) ? loading : label; button.title = actionTitle(); });
+  specs.forEach(([id, disabled, key, loading, label]) => {
+    const button = $(id); if (!button) return;
+    button.disabled = disabled;
+    if (id === "assistant-submit") {
+      button.setAttribute("aria-label", state.busy.has(key) ? loading : label);
+      button.title = state.busy.has(key) ? loading : label;
+    } else {
+      button.textContent = state.busy.has(key) ? loading : label;
+      button.title = actionTitle();
+    }
+  });
   ["reviewer", "decision", "justification"].forEach((id) => { $(id).disabled = readonly || state.busy.has("review"); });
   if ($("csv-file")) $("csv-file").disabled = readonly || state.busy.has("import");
   if ($("scenario-select")) $("scenario-select").disabled = readonly || ev?.source === "sac" || state.status?.mode !== "demo" || state.busy.has("evaluate");
@@ -324,7 +350,13 @@ async function mutate(key, work) {
   state.busy.add(key); updateButtons(); setError(null);
   try { await work(); }
   catch (error) { setError(error); }
-  finally { state.busy.delete(key); updateButtons(); }
+  finally {
+    state.busy.delete(key); updateButtons();
+    if (key === "assistant") {
+      $("assistant-orb")?.classList.remove("thinking");
+      if ($("assistant-state")?.textContent === "Analizando evidencia…") $("assistant-state").textContent = "Listo para analizar";
+    }
+  }
 }
 
 async function refreshDataAfterWrite() {
@@ -362,12 +394,16 @@ $("assistant-form").addEventListener("submit", (event) => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
   const body = { zone_id: $("assistant-zone-select").value, question: $("assistant-question").value.trim() };
+  const orb = $("assistant-orb"); const assistantState = $("assistant-state");
+  orb?.classList.add("thinking"); if (assistantState) assistantState.textContent = "Analizando evidencia…";
   mutate("assistant", async () => {
     const result = await api("assistant/query", { method: "POST", body: JSON.stringify(body) });
     const facts = add(node("ul", "assistant-facts"), ...asArray(result.facts).map((fact) => node("li", "", fact)));
     const actions = add(node("div", "assistant-actions"), ...asArray(result.suggested_actions).map((action) => node("span", "muted-pill", action)));
     $("assistant-answer").className = "assistant-answer";
     $("assistant-answer").replaceChildren(node("p", "assistant-message", result.answer), facts, actions, node("small", "", result.notice));
+    orb?.classList.remove("thinking"); orb?.classList.add("resolved"); if (assistantState) assistantState.textContent = "Respuesta trazable lista";
+    window.setTimeout(() => orb?.classList.remove("resolved"), 1800);
   });
 });
 document.querySelectorAll("[data-prompt]").forEach((button) => button.addEventListener("click", () => { $("assistant-question").value = button.dataset.prompt; $("assistant-question").focus(); }));

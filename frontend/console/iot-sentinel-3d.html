@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoRisk IoT Sentinel · Modelo 3D CAD Industrial de Alta Fidelidad</title>
+  <!-- Three.js r128, OrbitControls, Tween.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #05070c;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #e2e8f0;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    /* Minimalist Studio Viewport HUD */
+    .studio-hud {
+      position: absolute;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .interactive {
+      pointer-events: auto;
+    }
+    .hud-chip {
+      background: rgba(10, 15, 29, 0.82);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 12px;
+      padding: 8px 16px;
+      color: #f8fafc;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+    }
+    .hud-btn {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      padding: 8px 14px;
+      border-radius: 9px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.22s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+    .hud-btn:hover {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #60a5fa;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+    }
+    .hud-btn.active {
+      background: #1d4ed8;
+      color: #ffffff;
+      border-color: #93c5fd;
+      box-shadow: 0 0 16px rgba(59, 130, 246, 0.5);
+    }
+    .crosshair-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 16px;
+      height: 16px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      opacity: 0.18;
+    }
+    .crosshair-center::before, .crosshair-center::after {
+      content: '';
+      position: absolute;
+      background: #fff;
+    }
+    .crosshair-center::before { top: 7px; left: 0; width: 16px; height: 1.5px; }
+    .crosshair-center::after { top: 0; left: 7px; width: 1.5px; height: 16px; }
+
+    /* Part Tooltip Badge on Click */
+    #part-tooltip {
+      position: absolute;
+      display: none;
+      background: rgba(10, 15, 29, 0.94);
+      backdrop-filter: blur(16px);
+      border: 1px solid #3b82f6;
+      border-radius: 8px;
+      padding: 8px 14px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 500;
+      pointer-events: none;
+      z-index: 200;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+      max-width: 280px;
+    }
+    #part-tooltip strong {
+      color: #60a5fa;
+      display: block;
+      margin-bottom: 2px;
+      font-size: 12px;
+    }
+
+    /* Controls Overlay */
+    .top-left-hud {
+      top: 18px;
+      left: 18px;
+    }
+    .top-right-hud {
+      top: 18px;
+      right: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      max-width: 580px;
+    }
+    .bottom-center-hud {
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+    .cad-status {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 3D CANVAS CONTAINER -->
+  <div id="canvas-container"></div>
+  <div class="crosshair-center"></div>
+
+  <!-- TOOLTIP ON CLICK -->
+  <div id="part-tooltip"></div>
+
+  <!-- MINIMALIST STUDIO HEADER -->
+  <div class="studio-hud top-left-hud">
+    <div class="hud-chip interactive">
+      <span class="cad-status"></span>
+      <span>GeoRisk IoT Sentinel · Gemelo Digital CAD</span>
+      <span style="opacity: 0.45; font-size: 10px; font-family: monospace; letter-spacing: 0.5px;">PBR ULTRA-REALISTIC</span>
+    </div>
+  </div>
+
+  <!-- VIEWPORT CAMERA PRESETS (TOP RIGHT) -->
+  <div class="studio-hud top-right-hud interactive">
+    <button onclick="setCam('isometric')" class="hud-btn active" id="btn-cam-iso">📐 Isométrica CAD</button>
+    <button onclick="setCam('esp32')" class="hud-btn" id="btn-cam-esp">🔬 ESP32 & Pines</button>
+    <button onclick="setCam('piezo')" class="hud-btn" id="btn-cam-piezo">⚡ Piezómetro Inox</button>
+    <button onclick="setCam('sensors')" class="hud-btn" id="btn-cam-sen">📟 OLED & Sensores</button>
+    <button onclick="setCam('top')" class="hud-btn" id="btn-cam-top">🔝 Vista Cenital</button>
+  </div>
+
+  <!-- STUDIO CONTROLS (BOTTOM CENTER) -->
+  <div class="studio-hud bottom-center-hud interactive">
+    <button onclick="toggleTurntable()" class="hud-btn" id="btn-turntable">
+      <span id="tt-icon">▶</span> 360° Auto-Rotación
+    </button>
+    <button onclick="toggleExplodedView()" class="hud-btn" id="btn-explode">
+      <span>⇕</span> Vista Explotada
+    </button>
+    <button onclick="toggleWires()" class="hud-btn active" id="btn-wires">
+      <span>⚡</span> Cables DuPont
+    </button>
+    <button onclick="toggleEnclosure()" class="hud-btn" id="btn-enclosure">
+      <span>📦</span> Caja IP67 Minera
+    </button>
+    <button onclick="toggleLightingMode()" class="hud-btn" id="btn-light">
+      <span>💡</span> Iluminación Estudio
+    </button>
+    <button onclick="resetCamera()" class="hud-btn">
+      <span>↺</span> Reset Vista
+    </button>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- THREE.JS ULTRA-REALISTIC 3D SCENE SCRIPT                        -->
+  <!-- ============================================================== -->
+  <script>
+    // -------------------------------------------------------------
+    // 1. SCENE, RENDERER, CAMERA & ORBIT CONTROLS
+    // -------------------------------------------------------------
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x05070c);
+    scene.fog = new THREE.FogExp2(0x05070c, 0.016);
+
+    const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 150);
+    camera.position.set(0, 13.5, 17.5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.28;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.02; // Restrict camera from going underneath table
+    controls.minDistance = 2.0;
+    controls.maxDistance = 45.0;
+    controls.target.set(0, 1.3, 0);
+
+    // -------------------------------------------------------------
+    // 2. STUDIO 4-POINT LIGHTING SETUP (PBR SHADING PERFECTION)
+    // -------------------------------------------------------------
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+    scene.add(ambientLight);
+
+    // Key Light (Warm soft directional light)
+    const keyLight = new THREE.DirectionalLight(0xfff6ec, 1.8);
+    keyLight.position.set(16, 26, 18);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 4096;
+    keyLight.shadow.mapSize.height = 4096;
+    keyLight.shadow.camera.near = 5;
+    keyLight.shadow.camera.far = 70;
+    keyLight.shadow.camera.left = -16;
+    keyLight.shadow.camera.right = 16;
+    keyLight.shadow.camera.top = 16;
+    keyLight.shadow.camera.bottom = -16;
+    keyLight.shadow.bias = -0.0001;
+    scene.add(keyLight);
+
+    // Fill Light (Cool bluish soft light)
+    const fillLight = new THREE.DirectionalLight(0xa5b4fc, 0.85);
+    fillLight.position.set(-18, 16, -14);
+    scene.add(fillLight);
+
+    // Rim / Edge Specular Light (Accentuates gold pins, silver solder, and steel bevels)
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.1);
+    rimLight.position.set(0, 20, -22);
+    scene.add(rimLight);
+
+    // Soft Overhead Diffuse Light
+    const topLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    topLight.position.set(0, 30, 0);
+    scene.add(topLight);
+
+    // PCB Status LEDs Glow Lights
+    const pcbGreenLedLight = new THREE.PointLight(0x22c55e, 2.2, 5);
+    pcbGreenLedLight.position.set(2.8, 2.4, 0.8);
+    scene.add(pcbGreenLedLight);
+
+    const pcbBlueLedLight = new THREE.PointLight(0x3b82f6, 1.8, 4);
+    pcbBlueLedLight.position.set(-1.4, 2.2, 0.6);
+    scene.add(pcbBlueLedLight);
+
+    // -------------------------------------------------------------
+    // 3. STUDIO WORKBENCH & ESD MAT
+    // -------------------------------------------------------------
+    const grid = new THREE.GridHelper(60, 60, 0x3b82f6, 0x111827);
+    grid.position.y = -0.02;
+    scene.add(grid);
+
+    // Dark technical anodized aluminum bench
+    const benchGeo = new THREE.BoxGeometry(24, 1.0, 15);
+    const benchMat = new THREE.MeshStandardMaterial({
+      color: 0x0c121e,
+      roughness: 0.38,
+      metalness: 0.6,
+    });
+    const bench = new THREE.Mesh(benchGeo, benchMat);
+    bench.position.y = 0.5;
+    bench.receiveShadow = true;
+    scene.add(bench);
+
+    // Textured silicone ESD anti-static work mat (Slate Blue)
+    const matGeo = new THREE.BoxGeometry(19, 0.06, 12);
+    const matMat = new THREE.MeshStandardMaterial({
+      color: 0x162032,
+      roughness: 0.8,
+      metalness: 0.05,
+    });
+    const esdMat = new THREE.Mesh(matGeo, matMat);
+    esdMat.position.set(0, 1.03, 0);
+    esdMat.receiveShadow = true;
+    scene.add(esdMat);
+
+    // -------------------------------------------------------------
+    // PROCEDURAL HIGH-RESOLUTION TEXTURE GENERATORS
+    // -------------------------------------------------------------
+
+    // 1. Breadboard 830-tie-points Face Texture
+    function generateBreadboardTexture() {
+      const cv = document.createElement('canvas');
+      cv.width = 2048;
+      cv.height = 1024;
+      const ctx = cv.getContext('2d');
+
+      // ABS plastic base (off-white cream)
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, cv.width, cv.height);
+
+      // Red (+) and Blue (-) power bus lines
+      ctx.lineWidth = 14;
+      ctx.strokeStyle = '#dc2626'; // Red (+)
+      ctx.beginPath(); ctx.moveTo(60, 110); ctx.lineTo(1980, 110); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(60, 850); ctx.lineTo(1980, 850); ctx.stroke();
+
+      ctx.strokeStyle = '#2563eb'; // Blue (-)
+      ctx.beginPath(); ctx.moveTo(60, 180); ctx.lineTo(1980, 180); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(60, 920); ctx.lineTo(1980, 920); ctx.stroke();
+
+      // Bus line labels + and -
+      ctx.font = 'bold 36px monospace';
+      ctx.fillStyle = '#dc2626';
+      ctx.fillText('+', 25, 122); ctx.fillText('+', 1995, 122);
+      ctx.fillText('+', 25, 862); ctx.fillText('+', 1995, 862);
+
+      ctx.fillStyle = '#2563eb';
+      ctx.fillText('-', 25, 192); ctx.fillText('-', 1995, 192);
+      ctx.fillText('-', 25, 932); ctx.fillText('-', 1995, 932);
+
+      // Center IC trough divider channel
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(40, 488, 1968, 48);
+
+      const cols = 60;
+      const startX = 100;
+      const stepX = 31.2;
+
+      // Draw tie-point pin holes (outer square bezel + dark inner spring contact)
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c * stepX;
+        // Power rails holes
+        drawHole(ctx, x, 110);
+        drawHole(ctx, x, 180);
+        drawHole(ctx, x, 850);
+        drawHole(ctx, x, 920);
+      }
+
+      // Terminal strips holes (Columns A-E and F-J)
+      const rowsY1 = [250, 290, 330, 370, 410]; // A B C D E
+      const rowsY2 = [600, 640, 680, 720, 760]; // F G H I J
+
+      ctx.font = 'bold 24px monospace';
+      ctx.fillStyle = '#64748b';
+
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c * stepX;
+        // Print column numbers every 5 pins
+        if ((c + 1) % 5 === 0) {
+          ctx.fillText(`${c + 1}`, x - 14, 468);
+          ctx.fillText(`${c + 1}`, x - 14, 572);
+        }
+
+        for (let r = 0; r < 5; r++) {
+          drawHole(ctx, x, rowsY1[r]);
+          drawHole(ctx, x, rowsY2[r]);
+        }
+      }
+
+      // Row letters A-J
+      const lettersTop = ['A', 'B', 'C', 'D', 'E'];
+      const lettersBot = ['F', 'G', 'H', 'I', 'J'];
+      ctx.font = 'bold 26px monospace';
+      ctx.fillStyle = '#475569';
+      for (let i = 0; i < 5; i++) {
+        ctx.fillText(lettersTop[i], 65, rowsY1[i] + 8);
+        ctx.fillText(lettersBot[i], 65, rowsY2[i] + 8);
+      }
+
+      function drawHole(context, cx, cy) {
+        context.fillStyle = '#94a3b8';
+        context.fillRect(cx - 7, cy - 7, 14, 14);
+        context.fillStyle = '#0f172a';
+        context.fillRect(cx - 5, cy - 5, 10, 10);
+        // Shiny internal metal spring contact leaf
+        context.fillStyle = '#64748b';
+        context.fillRect(cx - 3, cy - 3, 6, 2);
+      }
+
+      const tex = new THREE.CanvasTexture(cv);
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return tex;
+    }
+
+    // 2. ESP32 DevKit V1 PCB Silkscreen Texture (Realistic Pin Labels & Traces)
+    function generateEspPcbTexture() {
+      const cv = document.createElement('canvas');
+      cv.width = 2048;
+      cv.height = 1024;
+      const ctx = cv.getContext('2d');
+
+      // Deep matte black solder mask
+      ctx.fillStyle = '#0c1017';
+      ctx.fillRect(0, 0, cv.width, cv.height);
+
+      // Subtle copper traces under soldermask
+      ctx.strokeStyle = '#162235';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      for (let i = 0; i < 18; i++) {
+        ctx.moveTo(150 + i * 90, 80);
+        ctx.lineTo(250 + i * 90, 940);
+      }
+      ctx.stroke();
+
+      // Top row pin labels (15 pins)
+      const topLabels = ['3V3', 'GND', 'D15', 'D2', 'D4', 'RX2', 'TX2', 'D5', 'D18', 'D19', 'D21', 'RX0', 'TX0', 'D22', 'D23'];
+      // Bottom row pin labels (15 pins)
+      const botLabels = ['EN', 'VP', 'VN', 'D34', 'D35', 'D32', 'D33', 'D25', 'D26', 'D27', 'D14', 'D12', 'D13', 'GND', 'VIN'];
+
+      const startX = 220;
+      const stepX = 115;
+
+      ctx.font = 'bold 32px monospace';
+      ctx.textAlign = 'center';
+
+      for (let i = 0; i < 15; i++) {
+        const x = startX + i * stepX;
+
+        // Top pin pad (Gold Annular Ring + Hole)
+        ctx.fillStyle = '#eab308';
+        ctx.beginPath(); ctx.arc(x, 100, 24, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#05070a';
+        ctx.beginPath(); ctx.arc(x, 100, 13, 0, Math.PI * 2); ctx.fill();
+
+        // Top pin silkscreen label
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillText(topLabels[i], x, 175);
+
+        // Bottom pin pad
+        ctx.fillStyle = '#eab308';
+        ctx.beginPath(); ctx.arc(x, 924, 24, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#05070a';
+        ctx.beginPath(); ctx.arc(x, 924, 13, 0, Math.PI * 2); ctx.fill();
+
+        // Bottom pin silkscreen label
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillText(botLabels[i], x, 875);
+      }
+
+      // Board Silkscreen Branding & Markings
+      ctx.fillStyle = '#f1f5f9';
+      ctx.font = 'bold 44px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('DOIT ESP32 DEVKIT V1', 320, 480);
+
+      ctx.font = '24px monospace';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('DUAL CORE 240MHz · 2.4G Wi-Fi + BLE', 320, 525);
+      ctx.fillText('GEOPREDIA IOT SENTINEL HKT-2026', 320, 565);
+
+      // Pin 1 Indicator Dot
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(startX - 50, 100, 8, 0, Math.PI * 2); ctx.fill();
+
+      // Corner Mounting Holes with Silver Pads
+      const corners = [[80, 80], [1968, 80], [80, 944], [1968, 944]];
+      corners.forEach(([cx, cy]) => {
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath(); ctx.arc(cx, cy, 38, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#05070a';
+        ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI * 2); ctx.fill();
+      });
+
+      const tex = new THREE.CanvasTexture(cv);
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return tex;
+    }
+
+    // 3. ESP32 Metal RF Shield Texture
+    function generateEspShieldTexture() {
+      const cv = document.createElement('canvas');
+      cv.width = 1024;
+      cv.height = 1024;
+      const ctx = cv.getContext('2d');
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(0, 0, cv.width, cv.height);
+
+      // Brushed nickel lines
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.09)';
+      for (let i = 0; i < 500; i++) {
+        ctx.fillRect(0, Math.random() * cv.height, cv.width, 2);
+      }
+
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 68px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('ESPRESSIF', 512, 210);
+
+      ctx.font = 'bold 92px monospace';
+      ctx.fillText('ESP-WROOM-32', 512, 330);
+
+      ctx.font = 'bold 46px sans-serif';
+      ctx.fillText('CE 0700   FCC ID: 2AC7Z', 512, 440);
+
+      ctx.font = '36px monospace';
+      ctx.fillText('CMIIT ID: 2016DP4382', 512, 530);
+      ctx.fillText('KCC-CRM-esP-ESP-WROOM-32', 512, 590);
+
+      // QR Data-Matrix Box
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(400, 670, 224, 224);
+      ctx.fillRect(430, 700, 50, 50);
+      ctx.fillRect(544, 700, 50, 50);
+      ctx.fillRect(487, 770, 50, 50);
+      ctx.fillRect(430, 814, 50, 50);
+      ctx.fillRect(544, 814, 50, 50);
+
+      const tex = new THREE.CanvasTexture(cv);
+      return tex;
+    }
+
+    // 4. Piezometer Polished Steel Spec Plate Texture
+    function generatePiezoLabelTexture() {
+      const cv = document.createElement('canvas');
+      cv.width = 1024;
+      cv.height = 512;
+      const ctx = cv.getContext('2d');
+
+      // Brushed steel silver background
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(0, 0, cv.width, cv.height);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('GEOPREDIA · GEOTECHNICAL MONITORING', 512, 115);
+
+      ctx.font = 'bold 68px monospace';
+      ctx.fillText('PIEZOMETER P-102 (316L)', 512, 205);
+
+      ctx.font = '40px sans-serif';
+      ctx.fillText('RANGE: 0 - 10 BAR  |  4 - 20 mA (2-WIRE)', 512, 290);
+
+      ctx.font = '32px monospace';
+      ctx.fillText('IP68 SUBMERSIBLE · AISI 316L STAINLESS STEEL', 512, 370);
+      ctx.fillText('SN: 2026-QN402-0941  ·  MINING GRADE', 512, 430);
+
+      const tex = new THREE.CanvasTexture(cv);
+      return tex;
+    }
+
+    // 5. 0.96" SSD1306 OLED Screen Texture (Crisp Pixel Matrix)
+    function generateOledTexture() {
+      const cv = document.createElement('canvas');
+      cv.width = 512;
+      cv.height = 256;
+      const ctx = cv.getContext('2d');
+
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, cv.width, cv.height);
+
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(10, 10, cv.width - 20, cv.height - 20);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 36px monospace';
+      ctx.fillText('QN-402 MINING IOT', 32, 60);
+
+      ctx.fillStyle = '#4ade80';
+      ctx.font = 'bold 28px monospace';
+      ctx.fillText('STATUS: ONLINE [LoRa]', 32, 105);
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '30px monospace';
+      ctx.fillText('Piez: 4.18 bar (Norm)', 32, 155);
+      ctx.fillText('Incline: 1.12 deg', 32, 195);
+      ctx.fillText('Moisture: 58.4 %', 32, 235);
+
+      const tex = new THREE.CanvasTexture(cv);
+      return tex;
+    }
+
+    // -------------------------------------------------------------
+    // 4. ASSEMBLING THE ULTRA-REALISTIC 3D HARDWARE MODEL
+    // -------------------------------------------------------------
+    const masterAssembly = new THREE.Group();
+    scene.add(masterAssembly);
+
+    // ==========================================
+    // 4.1 SOLDERLESS BREADBOARD 830 TIE POINTS
+    // ==========================================
+    const bbTexture = generateBreadboardTexture();
+    const bbMaterial = new THREE.MeshStandardMaterial({
+      map: bbTexture,
+      roughness: 0.52,
+      metalness: 0.05
+    });
+    const bbGeom = new THREE.BoxGeometry(9.4, 0.45, 4.2);
+    const breadboard = new THREE.Mesh(bbGeom, bbMaterial);
+    breadboard.position.set(0, 1.25, 0);
+    breadboard.castShadow = true;
+    breadboard.receiveShadow = true;
+    breadboard.userData = { name: "Protoboard 830 Puntos", desc: "Base de interconexión con rieles de alimentación duales (+3.3V / GND)." };
+    masterAssembly.add(breadboard);
+
+    // Breadboard Interlocking Tabs on sides
+    const bbTabMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.6 });
+    for (let t = -1; t <= 1; t += 2) {
+      const tab1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.25), bbTabMat);
+      tab1.position.set(t * 3.2, 1.25, -2.18);
+      breadboard.add(tab1);
+
+      const tab2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.25), bbTabMat);
+      tab2.position.set(t * 3.2, 1.25, 2.18);
+      breadboard.add(tab2);
+    }
+
+    // ==========================================
+    // 4.2 ESP32 DEVKIT V1 BOARD WITH PINS & CHIPS
+    // ==========================================
+    const esp32Group = new THREE.Group();
+
+    // Matte Black FR4 PCB with High-Res Silkscreen Texture
+    const pcbTexture = generateEspPcbTexture();
+    const pcbMaterial = new THREE.MeshStandardMaterial({
+      map: pcbTexture,
+      roughness: 0.32,
+      metalness: 0.15
+    });
+    const pcbMesh = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.16, 2.6), pcbMaterial);
+    pcbMesh.castShadow = true;
+    esp32Group.add(pcbMesh);
+
+    // Metal RF Shield Can (ESP-WROOM-32)
+    const shieldTex = generateEspShieldTexture();
+    const shieldMat = new THREE.MeshStandardMaterial({
+      map: shieldTex,
+      metalness: 0.88,
+      roughness: 0.22
+    });
+    const shieldMesh = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.24, 1.7), shieldMat);
+    shieldMesh.position.set(0.8, 0.18, 0);
+    shieldMesh.castShadow = true;
+    esp32Group.add(shieldMesh);
+
+    // PCB Inverted-F Meander Antenna at the tip (Gold/Copper with cutouts)
+    const antTraceMat = new THREE.MeshStandardMaterial({ color: 0xca8a04, metalness: 0.85, roughness: 0.25 });
+    const antTrace = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.18, 1.7), antTraceMat);
+    antTrace.position.set(2.15, 0.10, 0);
+    esp32Group.add(antTrace);
+
+    // USB-to-UART Bridge Controller IC (CP2102) with 28 Solder Pins
+    const icBridgeMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.45 });
+    const icBridge = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.18, 0.75), icBridgeMat);
+    icBridge.position.set(-0.85, 0.15, 0);
+    esp32Group.add(icBridge);
+
+    // AMS1117 3.3V Low-Dropout Voltage Regulator with Cooling Tab
+    const vregBody = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.18, 0.45), icBridgeMat);
+    vregBody.position.set(-0.85, 0.15, 0.85);
+    const vregTab = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.12, 0.35), new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.92, roughness: 0.2 }));
+    vregTab.position.set(-0.85, 0.12, 1.1);
+    esp32Group.add(vregBody);
+    esp32Group.add(vregTab);
+
+    // 40.000 MHz Crystal Oscillator Can (Polished Silver Quartz Can)
+    const crystalMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, metalness: 0.95, roughness: 0.18 });
+    const crystalCan = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.16, 0.38), crystalMat);
+    crystalCan.position.set(0.0, 0.15, -0.6);
+    esp32Group.add(crystalCan);
+
+    // Metal Micro-USB Type-B Port with Internal 5-pin Tongue
+    const usbMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, metalness: 0.95, roughness: 0.15 });
+    const usbMesh = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.32, 0.8), usbMat);
+    usbMesh.position.set(-2.55, 0.2, 0);
+    usbMesh.castShadow = true;
+    esp32Group.add(usbMesh);
+
+    // Micro-USB Internal Black Insulator & Gold Contacts
+    const usbTongue = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.5), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 }));
+    usbTongue.position.set(-2.8, 0.18, 0);
+    esp32Group.add(usbTongue);
+
+    // Tactile Push Buttons (EN and BOOT)
+    const btnMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.6 });
+    const btnMetal = new THREE.MeshStandardMaterial({ color: 0xa1a1aa, metalness: 0.92, roughness: 0.25 });
+    for (let b = 0; b < 2; b++) {
+      const z = (b === 0) ? -0.9 : 0.9;
+      const bBase = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.2, 0.38), btnMetal);
+      bBase.position.set(-1.95, 0.16, z);
+      const bCap = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.15, 12), btnMat);
+      bCap.position.set(-1.95, 0.28, z);
+      esp32Group.add(bBase);
+      esp32Group.add(bCap);
+    }
+
+    // SMD 0805 Decoupling Capacitors (Ceramic Tan Body + Silver Caps)
+    const capMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5 });
+    const capEndMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.9 });
+    function createSmdCap(x, y, z) {
+      const capGrp = new THREE.Group();
+      const capBody = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.1), capMat);
+      const capE1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 0.1), capEndMat);
+      capE1.position.x = -0.09;
+      const capE2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 0.1), capEndMat);
+      capE2.position.x = 0.09;
+      capGrp.add(capBody); capGrp.add(capE1); capGrp.add(capE2);
+      capGrp.position.set(x, y, z);
+      return capGrp;
+    }
+    esp32Group.add(createSmdCap(-1.2, 0.14, 0.3));
+    esp32Group.add(createSmdCap(-1.2, 0.14, -0.3));
+    esp32Group.add(createSmdCap(-0.3, 0.14, 0.8));
+    esp32Group.add(createSmdCap(0.3, 0.14, -0.6));
+
+    // SMD LEDs (Red Power & Blue GPIO 2)
+    const redLedSmd = new THREE.Mesh(
+      new THREE.BoxGeometry(0.14, 0.14, 0.14),
+      new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 2.2 })
+    );
+    redLedSmd.position.set(-1.5, 0.16, -0.65);
+    esp32Group.add(redLedSmd);
+
+    const blueLedSmd = new THREE.Mesh(
+      new THREE.BoxGeometry(0.14, 0.14, 0.14),
+      new THREE.MeshStandardMaterial({ color: 0x3b82f6, emissive: 0x3b82f6, emissiveIntensity: 2.5 })
+    );
+    blueLedSmd.position.set(-1.5, 0.16, 0.65);
+    esp32Group.add(blueLedSmd);
+
+    // ========================================================
+    // 30 INDIVIDUAL PINS WITH SOLDER FILLETS & PLASTIC SPACERS
+    // ========================================================
+    const pinGoldMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.95, roughness: 0.12 });
+    const pinSpacerMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.65 });
+    const solderMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.96, roughness: 0.22 });
+
+    // Header spacers (Black plastic bar with segmented pin channels)
+    const spacerTop = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.3, 0.28), pinSpacerMat);
+    spacerTop.position.set(0, -0.15, -1.1);
+    esp32Group.add(spacerTop);
+
+    const spacerBottom = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.3, 0.28), pinSpacerMat);
+    spacerBottom.position.set(0, -0.15, 1.1);
+    esp32Group.add(spacerBottom);
+
+    for (let p = 0; p < 15; p++) {
+      const px = -2.03 + p * 0.29;
+
+      // Top Pin (Square post 0.64mm gold)
+      const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.72, 0.08), pinGoldMat);
+      p1.position.set(px, -0.35, -1.1);
+      esp32Group.add(p1);
+
+      // Top Solder Fillet (Shiny conical joint above PCB)
+      const s1 = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.08, 8), solderMat);
+      s1.position.set(px, 0.11, -1.1);
+      esp32Group.add(s1);
+
+      // Bottom Pin
+      const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.72, 0.08), pinGoldMat);
+      p2.position.set(px, -0.35, 1.1);
+      esp32Group.add(p2);
+
+      // Bottom Solder Fillet
+      const s2 = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.08, 8), solderMat);
+      s2.position.set(px, 0.11, 1.1);
+      esp32Group.add(s2);
+    }
+
+    esp32Group.position.set(-1.2, 1.85, 0);
+    esp32Group.userData = { name: "ESP32-WROOM-32 DevKit V1", desc: "Microcontrolador Dual-Core 240 MHz con 30 pines dorados soldados, antena meander y RF shield." };
+    masterAssembly.add(esp32Group);
+
+    // ==========================================
+    // 4.3 INDUSTRIAL PIEZOMETER P-102 (316L STEEL)
+    // ==========================================
+    const piezoGroup = new THREE.Group();
+
+    // High Polish Stainless Steel Material (PBR Metalness 0.96)
+    const piezoLabelTex = generatePiezoLabelTexture();
+    const steelBodyMat = new THREE.MeshStandardMaterial({
+      map: piezoLabelTex,
+      color: 0xffffff,
+      metalness: 0.96,
+      roughness: 0.14
+    });
+    const pureSteelMat = new THREE.MeshStandardMaterial({
+      color: 0xe2e8f0,
+      metalness: 0.97,
+      roughness: 0.12
+    });
+
+    // Main Cylindrical Body
+    const piezoCylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 3.6, 48), steelBodyMat);
+    piezoCylinder.rotation.z = Math.PI / 2;
+    piezoCylinder.castShadow = true;
+    piezoGroup.add(piezoCylinder);
+
+    // Hexagonal Wrench Nut (Collar)
+    const hexNut = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.54, 0.45, 6), pureSteelMat);
+    hexNut.rotation.z = Math.PI / 2;
+    hexNut.position.set(1.5, 0, 0);
+    hexNut.castShadow = true;
+    piezoGroup.add(hexNut);
+
+    // Threaded Probe Tip with 6 Concentric Ridges
+    const threadTip = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.39, 0.75, 32), pureSteelMat);
+    threadTip.rotation.z = Math.PI / 2;
+    threadTip.position.set(2.05, 0, 0);
+    piezoGroup.add(threadTip);
+
+    // Helical thread ridges simulation
+    for (let r = 0; r < 5; r++) {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.02, 8, 24), pureSteelMat);
+      ring.rotation.y = Math.PI / 2;
+      ring.position.set(1.8 + r * 0.12, 0, 0);
+      piezoGroup.add(ring);
+    }
+
+    // Porous Stone Sintered Stainless Filter Cap
+    const filterMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.92, metalness: 0.35 });
+    const filterTip = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.28, 24), filterMat);
+    filterTip.rotation.z = Math.PI / 2;
+    filterTip.position.set(2.55, 0, 0);
+    piezoGroup.add(filterTip);
+
+    // Heavy Duty Industrial Cable Gland (PG9 Nickel-Plated Brass)
+    const glandMat = new THREE.MeshStandardMaterial({ color: 0xa1a1aa, metalness: 0.92, roughness: 0.2 });
+    const gland = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.55, 24), glandMat);
+    gland.rotation.z = Math.PI / 2;
+    gland.position.set(-2.05, 0, 0);
+    piezoGroup.add(gland);
+
+    // Spiral Strain Relief Spring Boot
+    for (let s = 0; s < 7; s++) {
+      const springRing = new THREE.Mesh(new THREE.TorusGeometry(0.24 - s * 0.015, 0.025, 8, 24), glandMat);
+      springRing.rotation.y = Math.PI / 2;
+      springRing.position.set(-2.35 - s * 0.08, 0, 0);
+      piezoGroup.add(springRing);
+    }
+
+    // Coiled Heavy-Duty PUR Polyurethane Submersible Cable
+    const cableMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.65 });
+    const cablePoints = [
+      new THREE.Vector3(-2.85, 0, 0),
+      new THREE.Vector3(-3.4, -0.05, -0.5),
+      new THREE.Vector3(-4.2, -0.16, -1.1),
+      new THREE.Vector3(-5.3, -0.18, -0.8),
+      new THREE.Vector3(-5.7, -0.18, 0.3),
+      new THREE.Vector3(-5.0, -0.18, 1.3),
+      new THREE.Vector3(-3.8, -0.18, 1.1),
+      new THREE.Vector3(-3.2, -0.15, 0.0),
+      new THREE.Vector3(-2.6, 0.1, -0.6),
+    ];
+    const cableCurve = new THREE.CatmullRomCurve3(cablePoints);
+    const cableMesh = new THREE.Mesh(new THREE.TubeGeometry(cableCurve, 72, 0.13, 16, false), cableMat);
+    cableMesh.castShadow = true;
+    piezoGroup.add(cableMesh);
+
+    piezoGroup.position.set(-3.8, 1.45, -2.6);
+    piezoGroup.userData = { name: "Piezómetro Industrial P-102", desc: "Transductor piezorresistivo de presión de poros de acero inoxidable 316L (0-10 bar, 4-20mA, IP68)." };
+    masterAssembly.add(piezoGroup);
+
+    // ==========================================
+    // 4.4 MPU-6050 INCLINOMETER BREAKOUT
+    // ==========================================
+    const mpuGroup = new THREE.Group();
+    const mpuMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.35 });
+    const mpuPcb = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.12, 1.1), mpuMat);
+    mpuPcb.castShadow = true;
+    mpuGroup.add(mpuPcb);
+
+    // MPU-6050 MEMS Gyroscope / Accelerometer Chip
+    const gyroChip = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.12, 0.48), icBridgeMat);
+    gyroChip.position.set(0, 0.10, 0);
+    mpuGroup.add(gyroChip);
+
+    // 8-pin Gold Header on the edge with solder fillets
+    for (let i = 0; i < 8; i++) {
+      const pin = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.65, 0.07), pinGoldMat);
+      pin.position.set(-0.65 + i * 0.18, 0.25, -0.45);
+      mpuGroup.add(pin);
+
+      const fillet = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.06, 8), solderMat);
+      fillet.position.set(-0.65 + i * 0.18, 0.08, -0.45);
+      mpuGroup.add(fillet);
+    }
+
+    mpuGroup.position.set(-4.2, 1.35, 2.5);
+    mpuGroup.userData = { name: "Inclinómetro MPU-6050", desc: "Sensor inercial I2C de 6 ejes (giróscopo + acelerómetro) para monitoreo de deformación angular." };
+    masterAssembly.add(mpuGroup);
+
+    // ==========================================
+    // 4.5 CAPACITIVE SOIL MOISTURE SENSOR V1.2
+    // ==========================================
+    const probeGroup = new THREE.Group();
+    const probePcbMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.5 });
+    const probeHandle = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.1, 1.2), probePcbMat);
+    probeGroup.add(probeHandle);
+
+    // Two Fork Prongs with Gold-plated sensing edge
+    const prong1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 2.8), probePcbMat);
+    prong1.position.set(-0.35, 0, 1.6);
+    const prong2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 2.8), probePcbMat);
+    prong2.position.set(0.35, 0, 1.6);
+    probeGroup.add(prong1);
+    probeGroup.add(prong2);
+
+    // Immersion Gold (ENIG) Sensing Tracks
+    const goldLine1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 2.4), pinGoldMat);
+    goldLine1.position.set(-0.35, 0.01, 1.6);
+    probeGroup.add(goldLine1);
+
+    const goldLine2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 2.4), pinGoldMat);
+    goldLine2.position.set(0.35, 0.01, 1.6);
+    probeGroup.add(goldLine2);
+
+    // TLC555 Timer IC on Handle
+    const timer555 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.12, 0.45), icBridgeMat);
+    timer555.position.set(0, 0.08, 0);
+    probeGroup.add(timer555);
+
+    // 3-pin connector at top with solder joints
+    for (let c = 0; c < 3; c++) {
+      const pin = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 0.08), pinGoldMat);
+      pin.position.set(-0.25 + c * 0.25, 0.22, -0.5);
+      probeGroup.add(pin);
+    }
+
+    probeGroup.position.set(-5.5, 1.35, 0);
+    probeGroup.userData = { name: "Sonda de Humedad Capacitiva v1.2", desc: "Sensor dieléctrico anticorrosión para detección temprana de saturación y licuefacción." };
+    masterAssembly.add(probeGroup);
+
+    // ==========================================
+    // 4.6 LORA SX1276 RADIO MODULE & WHIP ANTENNA
+    // ==========================================
+    const loraGroup = new THREE.Group();
+    const loraMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.4 });
+    const loraPcb = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 1.5), loraMat);
+    loraGroup.add(loraPcb);
+
+    // Gold-plated Brass SMA Female Bulkhead Connector
+    const smaNut = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.38, 6), pinGoldMat);
+    smaNut.position.set(0, 0.24, 0);
+    loraGroup.add(smaNut);
+
+    const smaBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.45, 24), pinGoldMat);
+    smaBarrel.position.set(0, 0.48, 0);
+    loraGroup.add(smaBarrel);
+
+    // Black Textured Rubber Duck Antenna (915 MHz)
+    const antMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.72 });
+    const antRod = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 4.4, 24), antMat);
+    antRod.position.set(0, 2.8, 0);
+    antRod.castShadow = true;
+    loraGroup.add(antRod);
+
+    loraGroup.position.set(4.8, 1.35, -2.4);
+    loraGroup.userData = { name: "Transceptor LoRa SX1276 (915 MHz)", desc: "Módulo de radiofrecuencia de largo alcance para enlaces en quebradas de relave sin cobertura celular." };
+    masterAssembly.add(loraGroup);
+
+    // ==========================================
+    // 4.7 0.96" OLED DISPLAY (SSD1306)
+    // ==========================================
+    const oledGroup = new THREE.Group();
+    const oledPcbMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+    const oledPcb = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.12, 1.6), oledPcbMat);
+    oledGroup.add(oledPcb);
+
+    // Emissive OLED Screen Glass
+    const oledTex = generateOledTexture();
+    const oledScreenMat = new THREE.MeshStandardMaterial({
+      map: oledTex,
+      emissive: 0xffffff,
+      emissiveMap: oledTex,
+      emissiveIntensity: 1.35,
+      roughness: 0.08,
+      metalness: 0.1
+    });
+    const oledGlass = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 1.1), oledScreenMat);
+    oledGlass.position.set(0, 0.09, -0.1);
+    oledGroup.add(oledGlass);
+
+    // 4 Top Gold Pins (GND, VCC, SCL, SDA)
+    for (let o = 0; o < 4; o++) {
+      const pin = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 0.08), pinGoldMat);
+      pin.position.set(-0.45 + o * 0.3, 0.28, 0.65);
+      oledGroup.add(pin);
+    }
+
+    oledGroup.position.set(2.0, 1.65, 0);
+    oledGroup.userData = { name: "Pantalla OLED I2C 128x64", desc: "Display SSD1306 con telemetría geomecánica en tiempo real montado sobre protoboard." };
+    masterAssembly.add(oledGroup);
+
+    // ==========================================
+    // 4.8 5mm STATUS LEDS WITH BENT WIRE LEADS
+    // ==========================================
+    const wireLegMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, metalness: 0.95, roughness: 0.18 });
+
+    // Green 5mm LED
+    const ledGreenGroup = new THREE.Group();
+    const ledGreenBulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 24, 24),
+      new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 2.6, roughness: 0.2 })
+    );
+    ledGreenGroup.add(ledGreenBulb);
+    const leg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.6, 8), wireLegMat);
+    leg1.position.set(-0.06, -0.3, 0);
+    const leg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.6, 8), wireLegMat);
+    leg2.position.set(0.06, -0.3, 0);
+    ledGreenGroup.add(leg1); ledGreenGroup.add(leg2);
+    ledGreenGroup.position.set(3.4, 1.9, 0.8);
+    masterAssembly.add(ledGreenGroup);
+
+    // Red 5mm LED
+    const ledRedGroup = new THREE.Group();
+    const ledRedBulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 24, 24),
+      new THREE.MeshStandardMaterial({ color: 0x7f1d1d, emissive: 0x7f1d1d, emissiveIntensity: 0.3, roughness: 0.2 })
+    );
+    ledRedGroup.add(ledRedBulb);
+    const rleg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.6, 8), wireLegMat);
+    rleg1.position.set(-0.06, -0.3, 0);
+    const rleg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.6, 8), wireLegMat);
+    rleg2.position.set(0.06, -0.3, 0);
+    ledRedGroup.add(rleg1); ledRedGroup.add(rleg2);
+    ledRedGroup.position.set(3.4, 1.9, -0.8);
+    masterAssembly.add(ledRedGroup);
+
+    // Resistors with Color Bands (220Ω 1% Precision)
+    function createResistor(x, y, z) {
+      const resGroup = new THREE.Group();
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x93c5fd, roughness: 0.5 });
+      const resBody = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.46, 16), bodyMat);
+      resBody.rotation.x = Math.PI / 2;
+      resGroup.add(resBody);
+
+      // Color bands (Red, Red, Brown, Gold)
+      const rBand1 = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.04, 16), new THREE.MeshBasicMaterial({ color: 0xdc2626 }));
+      rBand1.rotation.x = Math.PI / 2; rBand1.position.z = -0.14; resGroup.add(rBand1);
+      const rBand2 = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.04, 16), new THREE.MeshBasicMaterial({ color: 0xdc2626 }));
+      rBand2.rotation.x = Math.PI / 2; rBand2.position.z = -0.06; resGroup.add(rBand2);
+      const rBand3 = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.04, 16), new THREE.MeshBasicMaterial({ color: 0x78350f }));
+      rBand3.rotation.x = Math.PI / 2; rBand3.position.z = 0.04; resGroup.add(rBand3);
+      const rBand4 = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.04, 16), new THREE.MeshBasicMaterial({ color: 0xd97706 }));
+      rBand4.rotation.x = Math.PI / 2; rBand4.position.z = 0.14; resGroup.add(rBand4);
+
+      // Axial bent leads
+      const l1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8), wireLegMat);
+      l1.position.set(0, -0.25, -0.23);
+      const l2 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8), wireLegMat);
+      l2.position.set(0, -0.25, 0.23);
+      resGroup.add(l1); resGroup.add(l2);
+      resGroup.position.set(x, y, z);
+      return resGroup;
+    }
+    masterAssembly.add(createResistor(3.4, 1.7, 1.3));
+    masterAssembly.add(createResistor(3.4, 1.7, -1.3));
+
+    // ========================================================
+    // 4.9 JUMPER WIRES WITH REAL DUPONT TERMINAL HOUSINGS
+    // ========================================================
+    const wiresGroup = new THREE.Group();
+    masterAssembly.add(wiresGroup);
+
+    function createRealisticDupontWire(pStart, pMid1, pMid2, pEnd, colorHex) {
+      const wireSubGroup = new THREE.Group();
+
+      // Black rectangular Dupont connector housing with latch window
+      const dupontMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.65 });
+      const crimpSilverMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.95 });
+
+      function createHousing(pos) {
+        const hGroup = new THREE.Group();
+        const shell = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.45, 0.18), dupontMat);
+        hGroup.add(shell);
+        // Stamped latch terminal window (silver metal crimp visible inside)
+        const windowCrimp = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.12, 0.08), crimpSilverMat);
+        windowCrimp.position.set(0, 0, 0.06);
+        hGroup.add(windowCrimp);
+        hGroup.position.copy(pos);
+        return hGroup;
+      }
+
+      wireSubGroup.add(createHousing(pStart));
+      wireSubGroup.add(createHousing(pEnd));
+
+      // Natural Catenary Flexible PVC Wire
+      const curve = new THREE.CubicBezierCurve3(
+        new THREE.Vector3(pStart.x, pStart.y + 0.25, pStart.z),
+        pMid1,
+        pMid2,
+        new THREE.Vector3(pEnd.x, pEnd.y + 0.25, pEnd.z)
+      );
+      const tubeGeo = new THREE.TubeGeometry(curve, 52, 0.048, 12, false);
+      const tubeMat = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        roughness: 0.35,
+        metalness: 0.08
+      });
+      const tubeMesh = new THREE.Mesh(tubeGeo, tubeMat);
+      tubeMesh.castShadow = true;
+      wireSubGroup.add(tubeMesh);
+
+      return wireSubGroup;
+    }
+
+    // Yellow Wire: Piezometer Analog Signal to ESP32 Pin GPIO 34 (ADC)
+    wiresGroup.add(createRealisticDupontWire(
+      new THREE.Vector3(-2.4, 1.45, -0.6),
+      new THREE.Vector3(-1.8, 3.2, -1.4),
+      new THREE.Vector3(-1.2, 2.8, -1.1),
+      new THREE.Vector3(-0.8, 1.85, -1.1),
+      0xfacc15
+    ));
+
+    // Blue Wire: Inclinometer SDA to ESP32 GPIO 21
+    wiresGroup.add(createRealisticDupontWire(
+      new THREE.Vector3(-3.4, 1.45, 2.0),
+      new THREE.Vector3(-2.6, 3.0, 1.6),
+      new THREE.Vector3(-1.4, 2.6, 1.1),
+      new THREE.Vector3(-0.6, 1.85, 1.1),
+      0x3b82f6
+    ));
+
+    // Green Wire: Inclinometer SCL to ESP32 GPIO 22
+    wiresGroup.add(createRealisticDupontWire(
+      new THREE.Vector3(-3.2, 1.45, 2.0),
+      new THREE.Vector3(-2.4, 3.3, 1.8),
+      new THREE.Vector3(-1.2, 2.8, 1.2),
+      new THREE.Vector3(-0.35, 1.85, 1.1),
+      0x22c55e
+    ));
+
+    // Purple Wire: Soil Moisture to ESP32 GPIO 35 (ADC)
+    wiresGroup.add(createRealisticDupontWire(
+      new THREE.Vector3(-4.4, 1.45, 0),
+      new THREE.Vector3(-3.0, 2.8, 0),
+      new THREE.Vector3(-1.8, 2.6, -0.8),
+      new THREE.Vector3(-1.1, 1.85, -1.1),
+      0xa855f7
+    ));
+
+    // Cyan Wire: OLED I2C SDA to ESP32 GPIO 21
+    wiresGroup.add(createRealisticDupontWire(
+      new THREE.Vector3(1.7, 1.75, 0.65),
+      new THREE.Vector3(1.0, 2.6, 0.9),
+      new THREE.Vector3(0.2, 2.4, 1.0),
+      new THREE.Vector3(-0.1, 1.85, 1.1),
+      0x06b6d4
+    ));
+
+    // Orange Wire: LoRa MOSI to ESP32 GPIO 23
+    wiresGroup.add(createRealisticDupontWire(
+      new THREE.Vector3(3.8, 1.45, -2.0),
+      new THREE.Vector3(2.5, 3.1, -1.5),
+      new THREE.Vector3(1.0, 2.8, -1.1),
+      new THREE.Vector3(0.4, 1.85, -1.1),
+      0xf97316
+    ));
+
+    // White Wire: LoRa MISO to ESP32 GPIO 19
+    wiresGroup.add(createRealisticDupontWire(
+      new THREE.Vector3(4.0, 1.45, -2.0),
+      new THREE.Vector3(2.6, 3.3, -1.2),
+      new THREE.Vector3(0.8, 2.9, -1.0),
+      new THREE.Vector3(0.1, 1.85, -1.1),
+      0xf8fafc
+    ));
+
+    // Red Wire: Power Rail (+3.3V)
+    wiresGroup.add(createRealisticDupontWire(
+      new THREE.Vector3(-2.2, 1.85, -1.1),
+      new THREE.Vector3(-2.2, 2.3, -1.6),
+      new THREE.Vector3(-1.5, 2.3, -1.6),
+      new THREE.Vector3(-1.5, 1.45, -1.75),
+      0xef4444
+    ));
+
+    // Black Wire: Ground Rail (GND)
+    wiresGroup.add(createRealisticDupontWire(
+      new THREE.Vector3(-2.4, 1.85, -1.1),
+      new THREE.Vector3(-2.4, 2.4, -1.8),
+      new THREE.Vector3(-1.8, 2.4, -1.8),
+      new THREE.Vector3(-1.8, 1.45, -1.95),
+      0x18181b
+    ));
+
+    // ==========================================
+    // 4.10 INDUSTRIAL IP67 RUGGED MINING ENCLOSURE
+    // ==========================================
+    const enclosureGroup = new THREE.Group();
+    enclosureGroup.visible = false;
+    scene.add(enclosureGroup);
+
+    // Dark Polycarbonate Base Box
+    const encBaseMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.45,
+      metalness: 0.15
+    });
+    const encBox = new THREE.Mesh(new THREE.BoxGeometry(16.5, 4.2, 11.5), encBaseMat);
+    encBox.position.set(0, 2.1, 0);
+    encBox.castShadow = true;
+    enclosureGroup.add(encBox);
+
+    // Transparent Tinted Polycarbonate Lid (IP67)
+    const lidMat = new THREE.MeshPhysicalMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.28,
+      roughness: 0.12,
+      metalness: 0.1,
+      transmission: 0.75,
+      ior: 1.52,
+      reflectivity: 0.6
+    });
+    const encLid = new THREE.Mesh(new THREE.BoxGeometry(16.6, 0.4, 11.6), lidMat);
+    encLid.position.set(0, 4.3, 0);
+    enclosureGroup.add(encLid);
+
+    // Silicone Gasket in Rim (Neon Cyan / Orange)
+    const gasketMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.8 });
+    const gasket = new THREE.Mesh(new THREE.BoxGeometry(16.4, 0.15, 11.4), gasketMat);
+    gasket.position.set(0, 4.15, 0);
+    enclosureGroup.add(gasket);
+
+    // 4 Stainless Steel Corner Locking Screws
+    const screwMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, metalness: 0.95 });
+    const screwOffsets = [[-7.8, -5.3], [7.8, -5.3], [-7.8, 5.3], [7.8, 5.3]];
+    screwOffsets.forEach(([sx, sz]) => {
+      const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.6, 16), screwMat);
+      screw.position.set(sx, 4.35, sz);
+      enclosureGroup.add(screw);
+    });
+
+    // 2 Waterproof PG9 Industrial Cable Glands on side wall
+    const encGlandMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.5 });
+    for (let g = 0; g < 2; g++) {
+      const eg = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.8, 16), encGlandMat);
+      eg.rotation.z = Math.PI / 2;
+      eg.position.set(-8.5, 1.8, -2.0 + g * 4.0);
+      enclosureGroup.add(eg);
+    }
+
+    // -------------------------------------------------------------
+    // 5. CAMERA PRESETS & STUDIO CONTROLS
+    // -------------------------------------------------------------
+    const camTargets = {
+      isometric: { pos: { x: 0, y: 13.5, z: 17.5 }, target: { x: 0, y: 1.3, z: 0 } },
+      esp32:     { pos: { x: -1.2, y: 3.6, z: 3.6 }, target: { x: -1.2, y: 1.85, z: 0 } },
+      piezo:     { pos: { x: -3.8, y: 3.2, z: 1.6 }, target: { x: -3.8, y: 1.45, z: -2.6 } },
+      sensors:   { pos: { x: 0.8, y: 4.8, z: 5.2 }, target: { x: 0, y: 1.5, z: 0.5 } },
+      top:       { pos: { x: 0, y: 22, z: 0.1 }, target: { x: 0, y: 1.2, z: 0 } },
+    };
+
+    function setCam(viewName) {
+      const preset = camTargets[viewName];
+      if (!preset) return;
+
+      document.querySelectorAll('.hud-btn').forEach(b => {
+        if (b.id && b.id.startsWith('btn-cam-')) b.classList.remove('active');
+      });
+      const activeBtn = document.getElementById(`btn-cam-${viewName.slice(0, 3)}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      new TWEEN.Tween(camera.position)
+        .to(preset.pos, 900)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .start();
+
+      new TWEEN.Tween(controls.target)
+        .to(preset.target, 900)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .start();
+    }
+
+    function resetCamera() {
+      setCam('isometric');
+    }
+
+    // Auto-Turntable
+    let turntable = false;
+    function toggleTurntable() {
+      turntable = !turntable;
+      controls.autoRotate = turntable;
+      controls.autoRotateSpeed = 2.2;
+      document.getElementById('tt-icon').innerText = turntable ? '⏸' : '▶';
+      document.getElementById('btn-turntable').classList.toggle('active', turntable);
+    }
+
+    // Toggle Wires
+    let wiresVisible = true;
+    function toggleWires() {
+      wiresVisible = !wiresVisible;
+      wiresGroup.visible = wiresVisible;
+      document.getElementById('btn-wires').classList.toggle('active', wiresVisible);
+    }
+
+    // Toggle Mining IP67 Enclosure
+    let enclosureVisible = false;
+    function toggleEnclosure() {
+      enclosureVisible = !enclosureVisible;
+      enclosureGroup.visible = enclosureVisible;
+      document.getElementById('btn-enclosure').classList.toggle('active', enclosureVisible);
+    }
+
+    // Exploded View (Lifts and spreads components in 3D)
+    let exploded = false;
+    function toggleExplodedView() {
+      exploded = !exploded;
+      document.getElementById('btn-explode').classList.toggle('active', exploded);
+
+      const targetEspY = exploded ? 4.4 : 1.85;
+      const targetPiezoX = exploded ? -6.8 : -3.8;
+      const targetMpuZ = exploded ? 5.0 : 2.5;
+      const targetOledY = exploded ? 3.9 : 1.65;
+      const targetLoraX = exploded ? 6.8 : 4.8;
+      const targetProbeX = exploded ? -7.5 : -5.5;
+
+      new TWEEN.Tween(esp32Group.position).to({ y: targetEspY }, 750).easing(TWEEN.Easing.Back.Out).start();
+      new TWEEN.Tween(piezoGroup.position).to({ x: targetPiezoX }, 750).easing(TWEEN.Easing.Back.Out).start();
+      new TWEEN.Tween(mpuGroup.position).to({ z: targetMpuZ }, 750).easing(TWEEN.Easing.Back.Out).start();
+      new TWEEN.Tween(oledGroup.position).to({ y: targetOledY }, 750).easing(TWEEN.Easing.Back.Out).start();
+      new TWEEN.Tween(loraGroup.position).to({ x: targetLoraX }, 750).easing(TWEEN.Easing.Back.Out).start();
+      new TWEEN.Tween(probeGroup.position).to({ x: targetProbeX }, 750).easing(TWEEN.Easing.Back.Out).start();
+
+      wiresGroup.visible = !exploded;
+    }
+
+    // Studio Lighting Toggle
+    let highContrast = false;
+    function toggleLightingMode() {
+      highContrast = !highContrast;
+      keyLight.intensity = highContrast ? 2.6 : 1.8;
+      rimLight.intensity = highContrast ? 2.0 : 1.1;
+      ambientLight.intensity = highContrast ? 0.35 : 0.65;
+      scene.background.set(highContrast ? 0x020306 : 0x05070c);
+      document.getElementById('btn-light').classList.toggle('active', highContrast);
+    }
+
+    // Raycaster for Instant Component Tooltip
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const tooltip = document.getElementById('part-tooltip');
+
+    window.addEventListener('click', (e) => {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+
+      const intersects = raycaster.intersectObjects(masterAssembly.children, true);
+      if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        while (obj && !obj.userData.name && obj.parent) {
+          obj = obj.parent;
+        }
+        if (obj && obj.userData.name) {
+          tooltip.style.display = 'block';
+          tooltip.style.left = `${Math.min(e.clientX + 14, window.innerWidth - 300)}px`;
+          tooltip.style.top = `${e.clientY - 20}px`;
+          tooltip.innerHTML = `<strong>${obj.userData.name}</strong><span>${obj.userData.desc}</span>`;
+          setTimeout(() => { tooltip.style.display = 'none'; }, 3000);
+        }
+      }
+    });
+
+    // -------------------------------------------------------------
+    // 6. ANIMATION LOOP & RESIZE
+    // -------------------------------------------------------------
+    function animate() {
+      requestAnimationFrame(animate);
+      TWEEN.update();
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
