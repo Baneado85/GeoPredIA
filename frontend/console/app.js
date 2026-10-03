@@ -14,6 +14,7 @@ const VIEW_NAMES = { overview: "Panorama y riesgo", agents: "Multiagentes", sent
 const state = { zones: [], selectedId: null, status: null, offline: true, reviews: [], runs: [], telemetry: [], selectedRunId: null, selectionSequence: 0, loadSequence: 0, selectionLoading: false, scenarioKey: "base", busy: new Set() };
 const numberFormat = new Intl.NumberFormat("es-PE", { maximumFractionDigits: 1 });
 const dateFormat = new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+let assistantPhaseTimer = null;
 
 function node(tag, className, text) {
   const result = document.createElement(tag);
@@ -366,6 +367,7 @@ async function mutate(key, work) {
   finally {
     state.busy.delete(key); updateButtons();
     if (key === "assistant") {
+      window.clearInterval(assistantPhaseTimer); assistantPhaseTimer = null;
       $("assistant-orb")?.classList.remove("thinking");
       document.querySelector(".assistant-console")?.classList.remove("is-thinking");
       if ($("assistant-state")?.textContent === "Analizando evidencia…") $("assistant-state").textContent = "Listo para analizar";
@@ -410,14 +412,19 @@ $("assistant-form").addEventListener("submit", (event) => {
   const body = { zone_id: $("assistant-zone-select").value, question: $("assistant-question").value.trim() };
   const orb = $("assistant-orb"); const assistantState = $("assistant-state"); const consoleRoot = document.querySelector(".assistant-console");
   consoleRoot?.classList.remove("is-answered"); consoleRoot?.classList.add("is-thinking");
-  orb?.classList.add("thinking"); if (assistantState) assistantState.textContent = "Analizando evidencia…";
+  orb?.classList.add("thinking");
+  const phases = ["Pensando…", "Buscando evidencia…", "Analizando dimensiones…", "Componiendo respuesta…"]; let phaseIndex = 0;
+  if (assistantState) assistantState.textContent = phases[0];
+  window.clearInterval(assistantPhaseTimer); assistantPhaseTimer = window.setInterval(() => { phaseIndex = (phaseIndex + 1) % phases.length; if (assistantState) assistantState.textContent = phases[phaseIndex]; }, 1050);
   mutate("assistant", async () => {
     const result = await api("assistant/query", { method: "POST", body: JSON.stringify(body) });
     const facts = add(node("ul", "assistant-facts"), ...asArray(result.facts).map((fact) => node("li", "", fact)));
     const actions = add(node("div", "assistant-actions"), ...asArray(result.suggested_actions).map((action) => node("span", "muted-pill", action)));
     $("assistant-answer").className = "assistant-answer";
     const reset = node("button", "assistant-reset", "Nueva consulta"); reset.type = "button"; reset.id = "assistant-reset"; reset.addEventListener("click", resetAssistant);
-    $("assistant-answer").replaceChildren(node("p", "assistant-message", result.answer), facts, actions, node("small", "", result.notice), reset);
+    const answerHead = add(node("div", "assistant-answer-head"), node("i"), node("span", "", "Respuesta"));
+    $("assistant-answer").replaceChildren(answerHead, node("p", "assistant-message", result.answer), facts, actions, node("small", "", result.notice), reset);
+    window.clearInterval(assistantPhaseTimer); assistantPhaseTimer = null;
     orb?.classList.remove("thinking"); orb?.classList.add("resolved"); if (assistantState) assistantState.textContent = "Respuesta trazable lista";
     consoleRoot?.classList.remove("is-thinking"); consoleRoot?.classList.add("is-answered");
     window.setTimeout(() => orb?.classList.remove("resolved"), 1800);
@@ -428,8 +435,8 @@ function resetAssistant() {
   consoleRoot?.classList.remove("is-thinking", "is-answered");
   $("assistant-question").value = "";
   $("assistant-answer").className = "assistant-answer assistant-welcome";
-  $("assistant-answer").replaceChildren(node("p", "assistant-message", "Selecciona una zona y pregúntame qué riesgo domina, qué información falta o por qué debería revisarse."));
-  if ($("assistant-state")) $("assistant-state").textContent = "Listo para analizar";
+  $("assistant-answer").replaceChildren(add(node("div", "assistant-answer-head"), node("i"), node("span", "", "Respuesta")), node("p", "assistant-message", "Selecciona una zona y pregúntame qué riesgo domina, qué información falta o por qué debería revisarse."));
+  if ($("assistant-state")) $("assistant-state").textContent = "Pregunta sobre una zona";
   $("assistant-question").focus();
 }
 $(`assistant-reset`)?.addEventListener("click", resetAssistant);
@@ -454,6 +461,41 @@ const mapView = { layer: "all", query: "" };
 $("map-search")?.addEventListener("input", (event) => { mapView.query = event.currentTarget.value.trim(); renderAnalytics(); });
 document.querySelectorAll(".layer-toggle").forEach((button) => button.addEventListener("click", () => { mapView.layer = button.dataset.layer || "all"; renderAnalytics(); }));
 
+function startAssistantOrb() {
+  const canvas = $("assistant-orb-canvas"); if (!canvas) return;
+  const context = canvas.getContext("2d"); if (!context) return;
+  const size = 220; const center = size / 2; const radius = 64;
+  const points = [];
+  for (let ring = 0; ring < 18; ring += 1) {
+    const y = 1 - ((ring + .5) / 18) * 2; const ringRadius = Math.sqrt(1 - y * y); const count = Math.max(5, Math.round(34 * ringRadius));
+    for (let index = 0; index < count; index += 1) { const angle = index / count * Math.PI * 2 + ring * .37; points.push({ x: Math.cos(angle) * ringRadius, y, z: Math.sin(angle) * ringRadius, seed: Math.random() * 6 }); }
+  }
+  let rotation = 0;
+  const draw = (time) => {
+    context.clearRect(0, 0, size, size); rotation += .004;
+    points.map((point) => { const x = point.x * Math.cos(rotation) + point.z * Math.sin(rotation); const z = -point.x * Math.sin(rotation) + point.z * Math.cos(rotation); return { x, y: point.y, z, seed: point.seed }; }).sort((a, b) => a.z - b.z).forEach((point) => {
+      const depth = (point.z + 1) / 2; const pulse = .55 + .45 * Math.sin(time / 520 + point.seed); const perspective = 2.7 / (2.7 - point.z);
+      context.beginPath(); context.fillStyle = `rgba(${Math.round(120 + depth * 105)},${Math.round(195 + depth * 45)},${Math.round(145 + depth * 70)},${(.2 + depth * .68) * pulse})`;
+      context.arc(center + point.x * radius * perspective, center - point.y * radius * perspective, .7 + depth * 1.15, 0, Math.PI * 2); context.fill();
+    });
+    requestAnimationFrame(draw);
+  };
+  requestAnimationFrame(draw);
+}
+
+function setupIotModel() {
+  const scene = $("iot-scene"); const model = $("iot-model"); if (!scene || !model) return;
+  let rx = -12; let ry = -22; let zoom = 1; let dragging = false; let lastX = 0; let lastY = 0;
+  const render = () => { scene.style.setProperty("--rx", `${rx}deg`); scene.style.setProperty("--ry", `${ry}deg`); scene.style.setProperty("--zoom", zoom); };
+  scene.addEventListener("pointerdown", (event) => { dragging = true; lastX = event.clientX; lastY = event.clientY; scene.setPointerCapture(event.pointerId); });
+  scene.addEventListener("pointermove", (event) => { if (!dragging) return; ry += (event.clientX - lastX) * .45; rx = Math.max(-55, Math.min(35, rx - (event.clientY - lastY) * .35)); lastX = event.clientX; lastY = event.clientY; render(); });
+  scene.addEventListener("pointerup", () => { dragging = false; });
+  scene.addEventListener("wheel", (event) => { event.preventDefault(); zoom = Math.max(.65, Math.min(1.35, zoom - event.deltaY * .0007)); render(); }, { passive: false });
+  $("iot-explode")?.addEventListener("click", (event) => { const active = scene.classList.toggle("exploded"); event.currentTarget.setAttribute("aria-pressed", String(active)); event.currentTarget.textContent = active ? "Ensamblar" : "Desglosar"; });
+  $("iot-reset-view")?.addEventListener("click", () => { rx = -12; ry = -22; zoom = 1; scene.classList.remove("exploded"); if ($("iot-explode")) { $("iot-explode").setAttribute("aria-pressed", "false"); $("iot-explode").textContent = "Desglosar"; } render(); });
+  render();
+}
+
 function navigate() {
   const requested = location.hash.slice(1); const view = Object.hasOwn(VIEW_NAMES, requested) ? requested : "overview";
   document.querySelectorAll(".view").forEach((section) => { section.hidden = section.id !== `view-${view}`; });
@@ -461,4 +503,4 @@ function navigate() {
   $("breadcrumb-view").textContent = VIEW_NAMES[view]; document.title = `${VIEW_NAMES[view]} · GeoPredIA`;
 }
 window.addEventListener("hashchange", navigate);
-navigate(); loadAll();
+startAssistantOrb(); setupIotModel(); navigate(); loadAll();
