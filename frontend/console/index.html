@@ -6,8 +6,10 @@
   <meta name="theme-color" content="#133e37">
   <meta name="description" content="GeoPredIA: evaluación explicable de riesgos geológicos y socioambientales para exploración.">
   <title>GeoPredIA · Centro de decisiones</title>
-  <link rel="stylesheet" href="./styles.css?v=20261003-5">
-  <script src="./app.js?v=20261003-5" defer></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="./styles.css?v=20261003-6">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
+  <script src="./app.js?v=20261003-6" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Saltar al contenido</a>
@@ -46,7 +48,7 @@
         <div class="kpi-grid" id="kpis"></div>
         <section class="risk-command" aria-labelledby="risk-command-title">
           <div class="risk-command-copy"><div class="eyebrow">EXPLORADOR GEORISK</div><h2 id="risk-command-title">Capas de riesgo</h2><p>Filtra la cartera y consulta cada punto desde el mapa.</p><label class="map-search"><span>⌕</span><input id="map-search" type="search" placeholder="Buscar zona o región" aria-label="Buscar zona en el mapa"></label><div class="layer-list" aria-label="Capas visibles"><button class="layer-toggle active" type="button" data-layer="all"><i></i><span><strong>Scoring global</strong><small id="map-total-count">Zonas evaluadas</small></span><b>●</b></button><button class="layer-toggle" type="button" data-layer="Alto"><i class="layer-high"></i><span><strong>Riesgo alto</strong><small>Prioridad de revisión</small></span><b>○</b></button><button class="layer-toggle" type="button" data-layer="Medio"><i class="layer-medium"></i><span><strong>Riesgo medio</strong><small>Seguimiento preventivo</small></span><b>○</b></button><button class="layer-toggle" type="button" data-layer="Bajo"><i class="layer-low"></i><span><strong>Riesgo bajo</strong><small>Monitoreo regular</small></span><b>○</b></button></div><a id="sac-story-link" class="button button-outline" href="https://sactrial-sacus10-wvs89sqlbd0v2ahch0f3bwyt.us10.hcs.cloud.sap/sap/fpa/ui/app.html#;mode=present%3Bpreview%3Dtrue;view_id=story2;resource_id=AECC69FE103144DBA7279F47CF2E9EEC;url_api=true" target="_blank" rel="noopener">Abrir Story SAC <svg><use href="#i-arrow"/></svg></a></div>
-          <div class="risk-map-shell"><div class="map-toolbar"><span><i></i><span id="map-visible-count">Zonas visibles</span></span><strong>Perú · cartera de exploración</strong></div><div class="map-tools" aria-hidden="true"><button>+</button><button>−</button><button>⌖</button></div><div id="risk-map" class="risk-map" role="img" aria-label="Mapa operativo de riesgos por zona"></div><div class="map-scale">0&nbsp;&nbsp;&nbsp;100&nbsp;&nbsp;&nbsp;200 km</div><div class="map-legend"><span><i class="map-low"></i>Bajo</span><span><i class="map-medium"></i>Medio</span><span><i class="map-high"></i>Alto</span></div></div>
+          <div class="risk-map-shell"><div class="map-toolbar"><span><i></i><span id="map-visible-count">Zonas visibles</span></span><strong>Perú · coordenadas del dataset</strong></div><div id="risk-map" class="risk-map" aria-label="Mapa geográfico interactivo de riesgos por zona"></div><div class="map-legend"><span><i class="map-low"></i>Bajo</span><span><i class="map-medium"></i>Medio</span><span><i class="map-high"></i>Alto</span></div></div>
           <div class="risk-mini-panels"><article><span>Distribución</span><div id="risk-distribution-chart" class="distribution-chart compact-chart"></div></article><article><span>Dimensión dominante</span><div id="dimension-chart" class="dimension-chart compact-dimensions"></div></article></div>
         </section>
         <section class="card chart-card overview-ranking"><div class="chart-heading"><div><div class="eyebrow">PRIORIZACIÓN</div><h2>Zonas con mayor riesgo global</h2></div><span class="live-label"><i></i>Evaluaciones disponibles</span></div><div id="risk-ranking-chart" class="ranking-chart"></div></section>

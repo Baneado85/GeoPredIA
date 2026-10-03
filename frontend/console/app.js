@@ -15,6 +15,21 @@ const state = { zones: [], selectedId: null, status: null, offline: true, review
 const numberFormat = new Intl.NumberFormat("es-PE", { maximumFractionDigits: 1 });
 const dateFormat = new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 let assistantPhaseTimer = null;
+let riskLeafletMap = null;
+let riskLeafletLayer = null;
+
+function ensureRiskMap() {
+  const root = $("risk-map");
+  if (!root || !window.L) return null;
+  if (riskLeafletMap) return riskLeafletMap;
+  riskLeafletMap = window.L.map(root, { zoomControl: true, minZoom: 4, maxZoom: 18 }).setView([-9.19, -75.02], 5);
+  window.L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }).addTo(riskLeafletMap);
+  riskLeafletLayer = window.L.layerGroup().addTo(riskLeafletMap);
+  return riskLeafletMap;
+}
 
 function node(tag, className, text) {
   const result = document.createElement(tag);
@@ -306,24 +321,32 @@ function renderAnalytics() {
   if (mapRoot) {
     if ($("map-total-count")) $("map-total-count").textContent = `${evaluations.length} zonas evaluadas`;
     const query = (mapView.query || "").toLowerCase();
-    const visible = evaluations.slice(0, 34).filter(({ zone, ev }) => {
+    const visible = evaluations.filter(({ zone, ev }) => {
       const matchesLayer = mapView.layer === "all" || classification(ev) === mapView.layer;
       const haystack = `${zone.name || ""} ${zone.region || ""} ${zone.id || ""}`.toLowerCase();
       return matchesLayer && haystack.includes(query);
     });
-    const points = visible.map(({ zone, ev }, index) => {
-      const point = node("button", `risk-map-point map-${classification(ev).toLowerCase().replace(" ", "-")}`);
-      point.type = "button";
-      point.style.left = `${25 + ((index * 37) % 58)}%`;
-      point.style.top = `${8 + ((index * 53) % 82)}%`;
-      point.style.setProperty("--pulse-delay", `${(index % 7) * -0.45}s`);
-      point.title = `${zone.name}: ${score(ev.global_risk)}/100 · ${classification(ev)}`;
-      point.setAttribute("aria-label", point.title);
-      point.addEventListener("click", () => { selectZone(zone.id); location.hash = "overview"; document.querySelector(".overview-grid")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
-      return point;
-    });
-    mapRoot.replaceChildren(...points);
-    if ($("map-visible-count")) $("map-visible-count").textContent = `${visible.length} zonas visibles`;
+    const mapped = visible.filter(({ zone }) => Number.isFinite(Number(zone.latitude)) && Number.isFinite(Number(zone.longitude)));
+    const map = ensureRiskMap();
+    if (map && riskLeafletLayer) {
+      riskLeafletLayer.clearLayers();
+      const colors = { Bajo: "#4f8a63", Medio: "#d5a449", Alto: "#c95f43" };
+      const bounds = [];
+      mapped.forEach(({ zone, ev }) => {
+        const latlng = [Number(zone.latitude), Number(zone.longitude)];
+        bounds.push(latlng);
+        const label = classification(ev);
+        const marker = window.L.circleMarker(latlng, { radius: 6.5, color: "#ffffff", weight: 2, fillColor: colors[label] || "#7d8982", fillOpacity: .94 });
+        marker.bindTooltip(`<strong>${String(zone.name || zone.id).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]))}</strong><br>${score(ev.global_risk)}/100 · ${label}<br><span>${String(zone.region || "Perú").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]))}</span>`, { direction: "top", offset: [0, -7], opacity: .96 });
+        marker.on("click", () => { selectZone(zone.id); document.querySelector(".overview-grid")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
+        marker.addTo(riskLeafletLayer);
+      });
+      if (bounds.length) map.fitBounds(bounds, { padding: [28, 28], maxZoom: mapped.length === 1 ? 9 : 8 });
+      setTimeout(() => map.invalidateSize(), 0);
+    } else if (!window.L) {
+      mapRoot.replaceChildren(empty("No fue posible cargar el mapa geográfico. Revisa la conexión a internet."));
+    }
+    if ($("map-visible-count")) $("map-visible-count").textContent = `${mapped.length} zonas visibles`;
     document.querySelectorAll(".layer-toggle").forEach((button) => {
       const active = button.dataset.layer === mapView.layer;
       button.classList.toggle("active", active);
@@ -510,6 +533,7 @@ function navigate() {
   document.querySelectorAll(".view").forEach((section) => { section.hidden = section.id !== `view-${view}`; });
   document.querySelectorAll(".nav-item").forEach((link) => { const active = link.dataset.view === view; link.classList.toggle("active", active); if (active) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current"); });
   $("breadcrumb-view").textContent = VIEW_NAMES[view]; document.title = `${VIEW_NAMES[view]} · GeoPredIA`;
+  if (view === "overview" && riskLeafletMap) setTimeout(() => riskLeafletMap.invalidateSize(), 0);
 }
 window.addEventListener("hashchange", navigate);
 startAssistantOrb(); setupIotModel(); navigate(); loadAll();

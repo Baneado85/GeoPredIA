@@ -42,6 +42,21 @@
 @media(max-width:680px){#view-overview>.hero{padding:20px;min-height:150px}#view-overview>.hero h1{font-size:27px}#view-overview>.hero .terrain-art{display:none}#view-overview>.risk-command .risk-map-shell{min-height:390px}}
 @media(prefers-reduced-motion:reduce){.risk-map-point:after,.assistant-orb,.assistant-orb i{animation:none!important}}
 
+/* Real geospatial map */
+.risk-map-shell:before,.risk-map-shell:after{display:none}
+.risk-map-shell{background:#dce6df}
+.risk-map{inset:46px 0 0;z-index:1}
+.map-toolbar{position:absolute;z-index:500;inset:0 0 auto}
+.map-tools,.map-scale{display:none}
+.map-legend{z-index:500;left:12px;bottom:12px;padding:8px 10px;border:1px solid #d5ddd6;border-radius:7px;background:#fffffff2;box-shadow:0 4px 16px #183a2b20;color:#43584c;backdrop-filter:blur(8px)}
+.risk-map.leaflet-container{font-family:"Segoe UI",Arial,sans-serif;background:#dce6df}
+.risk-map .leaflet-control-zoom,.risk-map .leaflet-control-attribution{border:1px solid #d1d9d2!important;box-shadow:0 5px 18px #183a2b1c!important}
+.risk-map .leaflet-control-zoom a{color:#27483a;background:#fffffff2}
+.risk-map .leaflet-control-attribution{padding:3px 7px;border-radius:5px 0 0 0;background:#ffffffe8;font-size:8px;color:#53665c}
+.risk-map .leaflet-tooltip{padding:9px 11px;border:0;border-radius:7px;background:#132c26;color:#eef5ef;box-shadow:0 7px 20px #102b2250;font-size:9px;line-height:1.5}
+.risk-map .leaflet-tooltip strong{font-size:10px}.risk-map .leaflet-tooltip span{color:#b9cdc1}
+.risk-map .leaflet-tooltip-top:before{border-top-color:#132c26}
+
 /* Keep Joule's orb present from the first frame; submitting only changes its tempo. */
 .assistant-console:not(.is-answered) .assistant-orb-wrap{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .assistant-console:not(.is-thinking):not(.is-answered) .assistant-orb-wrap{top:40%}
