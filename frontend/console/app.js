@@ -23,10 +23,9 @@ function ensureRiskMap() {
   if (!root || !window.L) return null;
   if (riskLeafletMap) return riskLeafletMap;
   riskLeafletMap = window.L.map(root, { zoomControl: true, minZoom: 4, maxZoom: 18 }).setView([-9.19, -75.02], 5);
-  window.L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-    subdomains: "abcd",
+  window.L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    attribution: 'Tiles &copy; Esri &mdash; Sources: Esri, HERE, Garmin, USGS, METI/NASA',
   }).addTo(riskLeafletMap);
   riskLeafletLayer = window.L.layerGroup().addTo(riskLeafletMap);
   return riskLeafletMap;
