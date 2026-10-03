@@ -56,6 +56,8 @@
 .risk-map .leaflet-tooltip{padding:9px 11px;border:0;border-radius:7px;background:#132c26;color:#eef5ef;box-shadow:0 7px 20px #102b2250;font-size:9px;line-height:1.5}
 .risk-map .leaflet-tooltip strong{font-size:10px}.risk-map .leaflet-tooltip span{color:#b9cdc1}
 .risk-map .leaflet-tooltip-top:before{border-top-color:#132c26}
+.risk-map .risk-geo-marker{filter:drop-shadow(0 2px 3px #173b2d88);transition:stroke-width .15s,filter .15s}
+.risk-map .risk-geo-marker:hover{stroke-width:4;filter:drop-shadow(0 3px 6px #173b2dcc)}
 
 /* Keep Joule's orb present from the first frame; submitting only changes its tempo. */
 .assistant-console:not(.is-answered) .assistant-orb-wrap{opacity:1;transform:translate(-50%,-50%) scale(1)}
