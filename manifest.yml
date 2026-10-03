@@ -9,7 +9,7 @@ applications:
     health-check-type: process
     timeout: 180
     env:
-      SEED_DEMO: "true"
+      SEED_DEMO: "false"
       SEED_OFFICIAL_DATASET: "true"
       GEOPREDIA_ALLOWED_HOSTS: "*.cfapps.us10.hana.ondemand.com,*.cfapps.us10-001.hana.ondemand.com"
       LLM_ENABLED: "false"
