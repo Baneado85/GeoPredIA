@@ -15,6 +15,7 @@ const state = { zones: [], selectedId: null, status: null, offline: true, review
 const numberFormat = new Intl.NumberFormat("es-PE", { maximumFractionDigits: 1 });
 const dateFormat = new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 let assistantPhaseTimer = null;
+const listView = { zonesExpanded: false, reviewsExpanded: false };
 let riskLeafletMap = null;
 let riskLeafletLayer = null;
 
@@ -180,7 +181,8 @@ function renderTable() {
   const filter = $("risk-filter").value;
   const zones = state.zones.filter((zone) => `${zone.name} ${zone.region} ${zone.id}`.toLocaleLowerCase("es").includes(query) && (filter === "all" || classification(zone.latest_evaluation) === filter));
   $("zone-count").textContent = `${zones.length} zonas`;
-  const rows = zones.map((zone) => {
+  const shownZones = listView.zonesExpanded ? zones : zones.slice(0, 6);
+  const rows = shownZones.map((zone) => {
     const ev = zone.latest_evaluation; const row = node("tr", zone.id === state.selectedId ? "selected" : "");
     const button = node("button", "zone-button", zone.name); button.type = "button"; button.setAttribute("aria-pressed", String(zone.id === state.selectedId)); button.addEventListener("click", () => selectZone(zone.id));
     add(row, add(node("td"), button, node("span", "zone-meta", `${zone.id} · ${zone.region || "Región sin registrar"}`)));
@@ -192,6 +194,12 @@ function renderTable() {
   });
   if (!rows.length) { const cell = node("td", "muted", "No hay zonas que coincidan con el filtro."); cell.colSpan = 5; rows.push(add(node("tr"), cell)); }
   $("zones-table-body").replaceChildren(...rows);
+  const toggle = $("zones-toggle");
+  if (toggle) {
+    toggle.hidden = zones.length <= 6;
+    toggle.textContent = listView.zonesExpanded ? "Ver menos zonas  ↑" : `Ver ${zones.length - 6} zonas más  ↓`;
+    toggle.setAttribute("aria-expanded", String(listView.zonesExpanded));
+  }
 }
 
 function renderSelects() {
@@ -267,10 +275,17 @@ function renderTelemetry() {
 function renderReviews() {
   const pending = state.zones.filter((zone) => zone.latest_evaluation?.review_status === "pending");
   $("pending-count").textContent = String(pending.length);
-  $("review-queue").replaceChildren(...(pending.length ? pending.map((zone, index) => {
+  const shownPending = listView.reviewsExpanded ? pending : pending.slice(0, 6);
+  $("review-queue").replaceChildren(...(pending.length ? shownPending.map((zone, index) => {
     const button = node("button", "button button-outline", "Revisar"); button.type = "button"; button.addEventListener("click", () => { selectZone(zone.id); $("reviewer").focus(); });
     return add(node("div", "queue-item"), node("span", "queue-number", String(index + 1).padStart(2, "0")), add(node("div"), node("strong", "", zone.name), node("small", "", `${zone.latest_evaluation.id} · ${classification(zone.latest_evaluation)}`)), button);
   }) : [empty("No hay evaluaciones pendientes de revisión.")]));
+  const toggle = $("reviews-toggle");
+  if (toggle) {
+    toggle.hidden = pending.length <= 6;
+    toggle.textContent = listView.reviewsExpanded ? "Ver menos evaluaciones  ↑" : `Ver ${pending.length - 6} evaluaciones más  ↓`;
+    toggle.setAttribute("aria-expanded", String(listView.reviewsExpanded));
+  }
   const ev = evaluation();
   $("review-evaluation-id").textContent = ev ? `${ev.id} · ${origin(ev)} · ${DECISIONS[ev.review_status] || "Sin revisión"}${ev.review_status !== "pending" ? ". Esta versión ya fue revisada. Genera otro escenario de demostración o importa una nueva evaluación para registrar otra decisión." : ". Se guardará la decisión sobre esta versión."}` : "Esta zona no tiene una evaluación vigente.";
   const reviews = [...state.reviews].sort((a, b) => (b.decided_at || b.created_at || b.reviewed_at || "").localeCompare(a.decided_at || a.created_at || a.reviewed_at || ""));
@@ -491,6 +506,8 @@ $("audit-button")?.addEventListener("click", () => mutate("audit", async () => {
 
 document.querySelectorAll(".zone-select").forEach((select) => select.addEventListener("change", () => selectZone(select.value)));
 $("zone-search").addEventListener("input", renderTable); $("risk-filter").addEventListener("change", renderTable); $("refresh-button").addEventListener("click", loadAll);
+$("zones-toggle")?.addEventListener("click", () => { listView.zonesExpanded = !listView.zonesExpanded; renderTable(); });
+$("reviews-toggle")?.addEventListener("click", () => { listView.reviewsExpanded = !listView.reviewsExpanded; renderReviews(); });
 const mapView = { layer: "all", query: "" };
 $("map-search")?.addEventListener("input", (event) => { mapView.query = event.currentTarget.value.trim(); renderAnalytics(); });
 document.querySelectorAll(".layer-toggle").forEach((button) => button.addEventListener("click", () => { mapView.layer = button.dataset.layer || "all"; renderAnalytics(); }));
