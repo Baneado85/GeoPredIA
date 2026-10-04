@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.cors import CORSMiddleware
 from .config import ROOT, configured
 from .data import now, evaluate_demo
 from .models import EvaluationRequest, AgentRequest, AssistantQuery, ReviewRequest, WorkflowCallback, TelemetryRequest, SimulationRequest, CSVImport
@@ -27,6 +28,18 @@ def create_app(db_path=None):
     allowed_hosts = ["localhost", "127.0.0.1", "[::1]", "testserver"]
     allowed_hosts.extend(host.strip() for host in os.getenv("GEOPREDIA_ALLOWED_HOSTS", "").split(",") if host.strip())
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
+    cors_origins = [
+        origin.strip()
+        for origin in os.getenv("GEOPREDIA_CORS_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
+    if cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=cors_origins,
+            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["Accept", "Content-Type", "X-API-Key"],
+        )
 
     @app.middleware("http")
     async def access_control(request: Request, call_next):
@@ -38,7 +51,8 @@ def create_app(db_path=None):
             if content_length > 600_000:
                 return JSONResponse({"detail": "La solicitud excede 600 KB."}, status_code=413)
             origin = request.headers.get("origin")
-            if origin and urlsplit(origin).netloc != request.url.netloc:
+            origin_allowed = origin in cors_origins if origin else False
+            if origin and urlsplit(origin).netloc != request.url.netloc and not origin_allowed:
                 return JSONResponse({"detail": "Origen no permitido."}, status_code=403)
             device_route = request.url.path in ("/api/telemetry", "/api/integrations/bpa/callback") and request.method == "POST"
             if not device_route:
