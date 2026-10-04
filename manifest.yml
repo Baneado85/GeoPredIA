@@ -14,5 +14,6 @@ applications:
       GEOPREDIA_ALLOWED_HOSTS: "*.cfapps.us10.hana.ondemand.com,*.cfapps.us10-001.hana.ondemand.com"
       LLM_ENABLED: "false"
       ALLOW_PUBLIC_DEMO: "true"
+      GEOPREDIA_CORS_ORIGINS: "https://georisk-app-ac374882u14.cfapps.us10-001.hana.ondemand.com,http://localhost:3000,http://localhost:8080"
     services:
       - geopredia-hdi
