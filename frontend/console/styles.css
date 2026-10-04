@@ -63,6 +63,15 @@
 .list-toggle:hover{background:#e8efe7;border-color:#c6d3c7}.list-toggle[hidden]{display:none}
 .review-list-toggle{width:100%;margin:16px 0 0}
 
+/* Keep every map overlay inside its panel and below the mobile navigation. */
+.risk-command{z-index:1;isolation:isolate;contain:paint}
+.risk-map-shell{isolation:isolate;contain:paint}
+.sidebar{z-index:2000}
+@media(max-width:680px){
+  .sidebar{z-index:2000;box-shadow:0 7px 20px #0d2e2524}
+  .risk-command:before,.risk-command:after,.map-toolbar,.map-legend{max-width:100%}
+}
+
 /* Keep Joule's orb present from the first frame; submitting only changes its tempo. */
 .assistant-console:not(.is-answered) .assistant-orb-wrap{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .assistant-console:not(.is-thinking):not(.is-answered) .assistant-orb-wrap{top:40%}
